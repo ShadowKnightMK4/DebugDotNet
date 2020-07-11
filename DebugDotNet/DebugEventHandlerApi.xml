@@ -1,0 +1,1037 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>DebugDotNet</name>
+    </assembly>
+    <members>
+        <member name="T:DebugDotNet.Win32DebugApi">
+            <summary>
+            Approach at  a lower level. This lies closer to our internale <see cref="T:NativeMethods"/> class
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.Win32DebugApi.DebugPriv">
+            <summary>
+            Set or clear the SE_DEBUG_PRIV privilege.  Doing this without pinvoke.net seems to require admin
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32DebugApi.INVALID_HANDLE_VALUE">
+            <summary>
+             the INVALID_HANDLE value for CreateProcess
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32DebugApi.INFINITE">
+            <summary>
+            If you call WaitForDebugEventEx() with this as the timeout it waits until an event occures
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.Win32DebugApi.WaitForDebugEvent(DebugDotNet.Win32.Structs.DEBUG_EVENT@,System.UInt32)">
+            <summary>
+            Wait until a debug event happens.
+            </summary>
+            <param name="DebugEvent">The struct to pass the results too</param>
+            <param name="Milliseconds">How long to wait (use INFINITE) to wait until something happens</param>
+            <see cref="M:NativeMethods.WaitForDebugEventEx(DebugDotNet.Win32.Structs.DEBUG_EVENT@,System.UInt32)"/>
+            <returns>returns true if an event happened</returns>
+        </member>
+        <member name="M:DebugDotNet.Win32DebugApi.ContinueDebugEvent(System.Int32,System.Int32,DebugDotNet.Win32.Enums.ContinueStatus)">
+            <summary>
+            Tell Windows what to do with the debug event after your code is done handling it
+            </summary>
+            <param name="dwProcessId">process id of event receiced</param>
+            <param name="dwThreadId">thread id of event received</param>
+            <param name="continueStatus">tell windows how your debugger responded</param>
+            <returns>the results of calling the NativeMethods.ContinueDebugEvent() </returns>
+        </member>
+        <member name="M:DebugDotNet.Win32DebugApi.DebugActiveProcessStop(System.Int32)">
+            <summary>
+            Quit receiving events from a process that had DebugActiveProcess() called against it
+            </summary>
+            <param name="dwProcessId">the id of the process to quit receiving debug events from</param>
+            <returns>returns if the call worked or not.</returns>
+        </member>
+        <member name="M:DebugDotNet.Win32DebugApi.DebugActiveProcess(System.Int32)">
+            <summary>
+            Debug target process with specified it. HIGH CHANCE of Evivated Admin privilage needed
+            </summary>
+            <param name="dwProcessId">the process id to debug</param>
+            <returns>if the call worked or not</returns>
+        </member>
+        <member name="M:DebugDotNet.Win32DebugApi.DebugActiveProcess(System.Diagnostics.Process)">
+            <summary>
+            Try Debugging the passes already running process with the contained ID
+            </summary>
+            <param name="P"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.Win32DebugApi.DebugNewProcess(System.Diagnostics.Process)">
+            <summary>
+            Enables the DebugPriv flag if not true and launches P and also debugs P
+            </summary>
+            <param name="P"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DebugDotNet.DebugEventCapture">
+            <summary>
+            syncronized access to a DEBUG_EVENT query.
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.DebugEventCapture.PushEvent(DebugDotNet.Win32.Structs.DEBUG_EVENT)">
+            <summary>
+            add a new event
+            </summary>
+            <param name="EventData">the event to add</param>
+        </member>
+        <member name="M:DebugDotNet.DebugEventCapture.PeekEvent">
+            <summary>
+            return the next event without removing it
+            </summary>
+            <returns>the next debug event in the list</returns>
+        </member>
+        <member name="M:DebugDotNet.DebugEventCapture.PullEvent">
+            <summary>
+            removes the least recently pushed event from the que
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.DebugEventCapture.EventCount">
+            <summary>
+            lock this and return event count
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.DebugEventCapture.ClearEvents">
+            <summary>
+                Event the DEBUG_EVENT quere
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.DebugEventWorkerThread">
+            <summary>
+            Spawns a worker thread to create the process passed and then monitors it for events.
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.DebugEventWorkerThread.Disposed">
+            <summary>
+            Returns if object was disposed
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.DebugEventWorkerThread.Finalize">
+            <summary>
+            Cleanup the unmanged part
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.DebugEventWorkerThread.Dispose(System.Boolean)">
+            <summary>
+            Dispose() unmanged resources with the ooption to toss the manged ones also
+            </summary>
+            <param name="Managed">True for managed also.</param>
+        </member>
+        <member name="M:DebugDotNet.DebugEventWorkerThread.Dispose">
+            <summary>
+            dispose of this object
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.DebugEventWorkerThread.CreationSetting">
+            <summary>
+            Choose how to relate DebugEventWorkerThread to the debugged process
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.DebugEventWorkerThread.CreationSetting.AttachRunningProgram">
+            <summary>
+            Attach to running existing program
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.DebugEventWorkerThread.CreationSetting.RunProgramThenAttach">
+            <summary>
+            spawn program then attach (same as launching program first) then using AttachRunningProgram
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.DebugEventWorkerThread.CreationSetting.CreateWithDebug">
+            <summary>
+            Create the process explicity with the worker thread with the debug flag passed
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.DebugEventWorkerThread.InternalThread">
+            <summary>
+            the internal Task 
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.DebugEventWorkerThread.DebugHandle">
+            <summary>
+            the internal handle the Task uses
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.DebugEventWorkerThread.QuitThread">
+            <summary>
+            a shared var; this is locked on assignment via stop.
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.DebugEventWorkerThread.Events">
+            <summary>
+            the debug event catcher that we push events to as we see them
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.DebugEventWorkerThread.Setting">
+            <summary>
+            the creation setting passed at start
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.DebugEventWorkerThread.InternalThreadCallback">
+            <summary>
+            the internal thread that watches for debug events and posts them to Events.
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.DebugEventWorkerThread.#ctor(System.Diagnostics.Process,DebugDotNet.DebugEventWorkerThread.CreationSetting)">
+            <summary>
+            Setup the worker thread
+            </summary>
+            <param name="p">Process to watch events for</param>
+            <param name="Setting">How to relate the process to this class instance</param>
+        </member>
+        <member name="M:DebugDotNet.DebugEventWorkerThread.Start">
+            <summary>
+            Spawn the thread to watch for events.
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.DebugEventWorkerThread.IsFaulted">
+            <summary>
+            was there an error in the worker thread?
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.DebugEventWorkerThread.IsComplete">
+            <summary>
+            was the worker thread finished? (The worker thread never quits so this should be false always)
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.DebugEventWorkerThread.Stop">
+            <summary>
+            set a private varible to tell the the underyling workher thread to quit.
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.Debugger">
+            <summary>
+            A basic event monitor and thread watcher wrapped up in one for a single process
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.DebugWorldView.ModuleBaseReference">
+            <summary>
+            used to resolve a bas address for a single dll name
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.DebugWorldView.IsDisposed">
+            <summary>
+            Get if the object is disposed
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.DebugWorldView.Finalize">
+            <summary>
+            Finalize
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.DebugWorldView.Dispose(System.Boolean)">
+            <summary>
+            Dispose implemntation
+            </summary>
+            <param name="Managed"></param>
+        </member>
+        <member name="M:DebugDotNet.DebugWorldView.Dispose">
+            <summary>
+            Dispose of Resources
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.DebugWorldView.#ctor(System.String,DebugDotNet.DebugEventWorkerThread.CreationSetting)">
+            <summary>
+            Debug this precess with the specified creation settings
+            </summary>
+            <param name="Process">process to debug</param>
+            <param name="Settings">The setting to use</param>
+        </member>
+        <member name="M:DebugDotNet.DebugWorldView.Start">
+            <summary>
+            start debugging the passed process based on the settings
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.Win32.Tools.UnmangedToolKit">
+            <summary>
+            If its something to easy use with memory pointers and not related to an imported routine
+            it goes here
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.Win32.Tools.UnmangedToolKit.UShortToBool(System.UInt16)">
+            <summary>
+            making a ushort as a true false
+            </summary>
+            <param name="s"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Tools.UnmangedToolKit.TrimPathProcessingConst(System.String)">
+            <summary>
+            If the passed path has "\\\\?\\" as a prefix part, remove it
+            </summary>
+            <param name="path"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Tools.UnmangedToolKit.ExtractLocalString(System.IntPtr,System.Int32,System.Boolean)">
+            <summary>
+            from pointer to string
+            </summary>
+            <param name="Base">poitner to the first cfharin the struct</param>
+            <param name="NotUsed">hold over from when this specified strength length.</param>
+            <param name="Unicode">tells if this pointer points to a unicode string</param>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Tools.UnmangedToolKit.ExtractLocalString(System.IntPtr,System.Boolean)">
+            <summary>
+            Marshal either a unicode or ansi string in the local process memory to a managed string
+            </summary>
+            <param name="BaseAddress">memory block</param>   
+            <param name="Unicode">set to non zero for unicode string. Zero or ansi</param>
+            <returns>a managed unicode string</returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Tools.UnmangedToolKit.ExtractString(System.Int32,System.IntPtr,System.IntPtr,System.Boolean)">
+            <summary>
+            Wraps Process.GetProcessByID() into a call read a string from the specified target process
+            </summary>
+            <param name="TargetProcessId">specifies ID of the process to read from</param>
+            <param name="BaseAddress">base address in the TARGET's Virtual Address Space</param>
+            <param name="size">not used. ignored.</param>
+            <param name="Unicode">True if unicode otherwise false</param>
+            <returns>the read string if it worked</returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Tools.UnmangedToolKit.ExtractString(System.IntPtr,System.IntPtr,System.IntPtr,System.Boolean)">
+            <summary>
+            Extract a string from either self or a remote process specifying its length
+            </summary>
+            <param name="TargetProcess">Process to read from. Using Process.GetCurrentProcess.Handle is the same as ExtractLocalString()</param>
+            <param name="BaseAddress">Address to check</param>
+            <param name="size">size (may be zero for whole thing)</param>
+            <param name="Unicode">non zero for unicode</param>
+            <returns>tghe read struct</returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Tools.UnmangedToolKit.ZeroMemory(System.Void*,System.Int32)">
+            <summary>
+            Zero a range of memory
+            </summary>
+            <param name="Target">memory location</param>
+            <param name="NumberOfBytes">number of bytes</param>
+        </member>
+        <member name="M:DebugDotNet.Win32.Tools.UnmangedToolKit.ZeroMemory(System.IntPtr,System.UInt32)">
+            <summary>
+            zero a reange of values
+            </summary>
+            <param name="target"></param>
+            <param name="len"></param>
+        </member>
+        <member name="M:DebugDotNet.Win32.Tools.UnmangedToolKit.Memset(System.Byte*,System.Byte,System.UInt32)">
+            <summary>
+            Set memory to specific range of values.
+            </summary>
+            <param name="target">target based address in the current procecess's Virtual Memory</param>
+            <param name="c">char to fill it with</param>
+            <param name="len">how many bytyes to fill</param>
+        </member>
+        <member name="T:DebugDotNet.Win32.Enums.DebugEventType">
+            <summary>
+            Specifies what type of Event is contained within the DebugEvent class struct
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.DebugEventType.RIP_EVENT">
+            <summary>
+            contains a RIP_EVENT_INTERNAL
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.DebugEventType.OUTPUT_DEBUG_STRING_EVENT">
+            <summary>
+            contains an OUTPUT_DEBUG_STRING_INTERNAL
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.DebugEventType.UNLOAD_DLL_DEBUG_EVENT">
+            <summary>
+            contains an UNLOAD_DLL_DEBUG_EVENT_INTERNAL
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.DebugEventType.LOAD_DLL_DEBUG_EVENT">
+            <summary>
+            contains a LOAD_DLL_DEBUG_EVENT_INTERNAL
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.DebugEventType.EXIT_PROCESS_DEBUG_EVENT">
+            <summary>
+            contains an EXIT_PROCESS_DEBUG_EVENT_INTERNAL
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.DebugEventType.EXIT_THREAD_DEBUG_EVENT">
+            <summary>
+            contains an EXIT_THREAD_DEBUG_EVENT_INTERNAL
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.DebugEventType.CREATE_PROCESS_DEBUG_EVENT">
+            <summary>
+            contains a CREATE_PROCESS_DEBUG_EVENT_INTERNAL
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.DebugEventType.CREATE_THREAD_DEBUG_EVENT">
+            <summary>
+            contains a CREATE_THREAD_DEBUG_EVENT_INTERNAL
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.DebugEventType.EXCEPTION_DEBUG_EVENT">
+            <summary>
+            contains an EXCEPTION_DEBUG_EVENT_INTERNAL
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.Win32.Enums.ContinueStatus">
+            <summary>
+            Specifies how to continue with the ContinueDebugger Native Routines.
+            Defines constants that match up with arguments to the ContinueDebugEvent  native function
+            either written format is fine they are the same value. They're there for user code readability
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.ContinueStatus.DBG_CONTINUE">
+            <summary>
+             For exception events, this tells Windows that the event was handled. For all other events this continues the process
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.ContinueStatus.DebugContinue">
+            <summary>
+             For exception events, this tells Windows that the event was handled. For all other events this continues the process
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.ContinueStatus.DBG_EXCEPTION_NOT_HANDLED">
+            <summary>
+            For exception events, tell Windows that your debugger code did not handle the exception
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.ContinueStatus.DebugExceptionNotHandled">
+            <summary>
+            For exception events, tell Windows that your debugger code did not handle the exception
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.ContinueStatus.DBG_REPLY_LATER">
+            <summary>
+            defination from MSDN: Supported in Windows 10, version 1507 or above, this flag causes dwThreadId to replay the existing breaking event after the target continues. By calling the SuspendThread API against dwThreadId, a debugger can resume other threads in the process and later return to the breaking. 
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.ContinueStatus.DebugReplyLater">
+            <summary>
+            defination from MSDN: Supported in Windows 10, version 1507 or above, this flag causes dwThreadId to replay the existing breaking event after the target continues. By calling the SuspendThread API against dwThreadId, a debugger can resume other threads in the process and later return to the breaking. 
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.BaseAccessViolation.Read">
+            <summary>
+            Target read something it should not have
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.BaseAccessViolation.Write">
+            <summary>
+            Target wrote to something it should not have
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Enums.BaseAccessViolation.DEP">
+            <summary>
+            Target trigged a Data Execution Prevention event
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.Win32.Enums.FinalFilePathFlags">
+            <summary>
+             Flags related to GetFinalFileNameByHandle()
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.Win32.Internal.CREATE_THREAD_DEBUG_INFO_INTERNAL">
+             <summary>
+            The CreateDebugThreadInfo structure before any processing
+             </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_THREAD_DEBUG_INFO_INTERNAL.hThread">
+            <summary>
+             the raw hThread handle
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_THREAD_DEBUG_INFO_INTERNAL.lpThreadLocalBase">
+            <summary>
+            the TLS memory block
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_THREAD_DEBUG_INFO_INTERNAL.lpStartAddress">
+            <summary>
+            the entry point of the thread
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL">
+            <summary>
+            The internal direct memory struct of RipInfo is made from.
+            <see cref="T:DebugDotNet.Win32.Structs.RipInfo"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL.dwError">
+            <summary>
+            from MSDN RIP_INFO:   The error that caused the RIP debug event.  Resolves to <seealso cref="F:DebugDotNet.Win32.Structs.RipInfo.dwError"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL.dwType">
+            <summary>
+            contains the value that specifies the type off error that thappens.  Resolvesto <seealso cref="F:DebugDotNet.Win32.Structs.RipInfo.dwType"/>
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL.Equals(DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL)">
+            <summary>
+            returns if the obj is equal to this
+            </summary>
+            <param name="CheckMe">thing to check to check</param>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL.Equals(System.Object)">
+            <summary>
+            returns if the obj is equal to this
+            </summary>
+            <param name="obj">obj to check</param>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL.GetHashCode">
+            <summary>
+            return a hashcode for this RIP_INFO_INTERNAL struct
+            </summary>
+            <returns>the hash</returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL.op_Equality(DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL,DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL)">
+            <summary>
+            return if left is equal to right
+            </summary>
+            <param name="left"></param>
+            <param name="right"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL.op_Inequality(DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL,DebugDotNet.Win32.Internal.RIP_INFO_INTERNAL)">
+            <summary>
+            return if left is not equal to right
+            </summary>
+            <param name="left"></param>
+            <param name="right"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL">
+            <summary>
+            The internal direct memory struct that <seealso cref="T:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO"/> is made from
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL.hFile">
+            <summary>
+            If non-zero is a Win32 Handle the the file this process is created from. Caller is responsbile for closing it when done. Resolves to <see cref="F:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO.hFile"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL.hProcess">
+            <summary>
+            If non-zero then it is handle to the process being debugged. Resolves to <see cref="F:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO.hProcess"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL.hThread">
+            <summary>
+            Handle to the starting thread of the prcess debug debugged. Resolves to <see cref="F:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO.hThread"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL.lpBaseOfImage">
+            <summary>
+            Pointet to the image base. Resolves to <see cref="F:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO.lpBaseOfImage"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL.dwDebugInfoFileOffset">
+            <summary>
+            Points to the locatation when the debug info is stored in the file <see cref="F:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO.dwDebugInfoFileOffset"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL.nDebugInfoSize">
+            <summary>
+            How big is this block of debug info <see cref="F:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO.nDebugInfoSize"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL.lpThreadLocalBase">
+            <summary>
+            Points to thread local storage <see cref="F:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO.lpThreadLocalBase"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL.lpStartAddress">
+            <summary>
+            Points to Proces Entry point. Does not have equivelent in <see cref="T:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL.lpImageName">
+            <summary>
+            pointer null terminated string (ANSI or UNICODE) if non zero . <see cref="F:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO.lpImageName"/>
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.CREATE_PROCESS_DEBUG_INFO_INTERNAL.fUnicode">
+            <summary>
+            is this unicode (non zero) or ansi (zero).  Not needed in <see cref="T:DebugDotNet.Win32.Structs.CREATE_PROCESS_DEBUG_INFO"/> final function
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.OUTPUT_DEBUG_STRING_INTERNAL.lpStringData">
+            <summary>
+            points to a block of memory contained the string data. 
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.OUTPUT_DEBUG_STRING_INTERNAL.fUnicode">
+            <summary>
+            if zero then the string is an ANSI code string. Otherwise it is a Unicode stringe
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Internal.OUTPUT_DEBUG_STRING_INTERNAL.nDebugStringLength">
+            <summary>
+            Contains the length of the string in chas
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.Win32.Internal.LOAD_DLL_DEBUG_INFO_INTERNAL.ToLoadDllDebugInfo">
+            <summary>
+            convert this to the convention version
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Structs.DEBUG_EVENT.GetHashCode">
+            <summary>
+            return a hashgcode of this class's members
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.DEBUG_EVENT.dwDebugEventCode">
+            <summary>
+            contains the type of struct that this escapolates
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.DEBUG_EVENT.dwProcessId">
+            <summary>
+            the process this event triggered from
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.DEBUG_EVENT.dwThreadId">
+            <summary>
+            the thread this event triggered from
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.DEBUG_EVENT.debugInfo">
+            <summary>
+            Raw byte information of the event
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.Win32.Structs.DEBUG_EVENT.Exception">
+            <summary>
+            gets the Exception Information 
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.Win32.Structs.DEBUG_EVENT.CreateThread">
+            <summary>
+            Get the CREATE_THREAD_DEBUG_INFO struct
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.Win32.Structs.DEBUG_EVENT.CreateProcessInfo">
+            <summary>
+            Get the CREATE_PROCESS_DEBUG_INFO struct
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.Win32.Structs.DEBUG_EVENT.ExitThread">
+            <summary>
+            Get the ExitThread Struct
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.Win32.Structs.DEBUG_EVENT.ExitProcess">
+            <summary>
+            Get the EXIT_PROCESS_INFO struct
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.Win32.Structs.DEBUG_EVENT.LoadDll">
+            <summary>
+            Get the LoadDll info struct
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.Win32.Structs.DEBUG_EVENT.UnloadDll">
+            <summary>
+            Get the UNLOAD_DLL_DEBUG_INFO struct
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.Win32.Structs.DEBUG_EVENT.SimpleGetStruct``1">
+            <summary>
+            if No special processing is needed i.e. strings ect..., the public struct properties get routed ot this.
+            </summary>
+            <typeparam name="T">The type of the Struct we are fetching</typeparam>
+            <returns>a struct Marshaled from the internal buffer with the sizeof(T) </returns>
+        </member>
+        <member name="P:DebugDotNet.Win32.Structs.DEBUG_EVENT.DebugString">
+            <summary>
+            Get the DebugInfo for the struct
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.Win32.Structs.DEBUG_EVENT.RipInfo">
+            <summary>
+            Get a RIP_INFO struct
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.Win32.Structs.DEBUG_EVENT.Equals(System.Object)">
+            <summary>
+            return if the 2 objects are equal. Does not check the byte[] array and the DEBUG_EVENT properties
+            </summary>
+            <param name="obj"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Structs.DEBUG_EVENT.op_Equality(DebugDotNet.Win32.Structs.DEBUG_EVENT,DebugDotNet.Win32.Structs.DEBUG_EVENT)">
+            <summary>
+            Are this two instances the same
+            </summary>
+            <param name="left"></param>
+            <param name="right"></param>
+            <returns></returns>
+        </member>
+        <member name="M:DebugDotNet.Win32.Structs.DEBUG_EVENT.op_Inequality(DebugDotNet.Win32.Structs.DEBUG_EVENT,DebugDotNet.Win32.Structs.DEBUG_EVENT)">
+            <summary>
+            Are this two instances not the same
+            </summary>
+            <param name="left"></param>
+            <param name="right"></param>
+            <returns></returns>
+        </member>
+        <member name="T:DebugDotNet.Win32.Structs.EXIT_THREAD_DEBUG_INFO">
+            <summary>
+            Exit Thread struct as returned via DebugEvent.ExitThread; 
+            triggers when a thread ends
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.EXIT_THREAD_DEBUG_INFO.dwExitCode">
+            <summary>
+            the exit code for the thread
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.Win32.Structs.EXIT_PROCESS_DEBUG_INFO">
+            <summary>
+            EXIT_PROCESS_DEBUG_INFO as retured via DebugEvent.ExitProcess
+            triggers when a process being debugged ends
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.EXIT_PROCESS_DEBUG_INFO.dwExitCode">
+            <summary>
+            the exit code received when the process exited
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.LOAD_DLL_DEBUG_INFO.hFile">
+            <summary>
+            a Handle to the DLL in question or 0 if there was en error.
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.LOAD_DLL_DEBUG_INFO.lpBaseOfDll">
+            <summary>
+            the base address of the dll
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.LOAD_DLL_DEBUG_INFO.dwDebugInfoFileOffset">
+            <summary>
+            the offset into the debug info of the dll
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.LOAD_DLL_DEBUG_INFO.nDebugInfoSize">
+            <summary>
+            the debug info size
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.LOAD_DLL_DEBUG_INFO.lpImageName">
+            <summary>
+            a string that specifies the dll's name. 
+            for this freindly version this is derhived on hFile also being valid.
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.LOAD_DLL_DEBUG_INFO.WasBad">
+            <summary>
+            set to True if the string could name be read (or a problem happend)
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.Win32.Structs.RipInfo">
+            <summary>
+            a RIP_INFO Debug Event Struct after it has been converted from RIP_INFO_Internal
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.RipInfo.dwError">
+            <summary>
+            possible error code
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.RipInfo.dwType">
+            <summary>
+            Specifies the eror that happend
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.Win32.Structs.RipInfo.ErrorType">
+            <summary>
+            What kind of error
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.RipInfo.ErrorType.ONLY_ERROR_SET">
+            <summary>
+            only dwError is set
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.RipInfo.ErrorType.SLE_WARNING">
+            <summary>
+            Indicates that potentially invalid data was passed to the function, but the function completed processing. 
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.RipInfo.ErrorType.SLE_MINORERROR">
+            <summary>
+            indicates that invalid data was passed to the function, but the error probably will not cause the application to fail. 
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.RipInfo.ErrorType.SLE_ERROR">
+            <summary>
+            Indicates that invalid data was passed to the function that failed. This caused the application to fail. 
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.EXCEPTION_ACCESS_VIOLATION_PARAMETERS.BaseViolation">
+            <summary>
+            what kind of violation did the target do
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.EXCEPTION_ACCESS_VIOLATION_PARAMETERS.EventAddressLocation">
+            <summary>
+            where did the violation occure in virtual memory land of the target
+            </summary>
+        </member>
+        <member name="P:DebugDotNet.Win32.Structs.EXCEPTION_RECORD.AccessViolation">
+            <summary>
+            returns the EXCEPTION_ACCESS_VIOLATE paramaters as a structure.
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.OUTPUT_DEBUG_STRING_INFO.lpDebugStringData">
+            <summary>
+            The String pointer is already read for the user.  Internalled we make a few ReadProcess Memory calls
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.OUTPUT_DEBUG_STRING_INFO.fUnicode">
+            <summary>
+            always going to be true. Ansi strings are converted to unicode before this struct gets them
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.OUTPUT_DEBUG_STRING_INFO.nDebugStringLength">
+            <summary>
+            for the c# user,  upto (ushort) lpDebugStringData.length 
+            </summary>
+        </member>
+        <member name="T:DebugDotNet.Win32.Structs.CREATE_THREAD_DEBUG_INFO">
+            <summary>
+            CREATE_THREAD_DEBUG_INFO as its returned via DebugEvent.CreateThread;
+            Triggers when a thread is started
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.CREATE_THREAD_DEBUG_INFO.hThread">
+            <summary>
+            Thread Handle
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.CREATE_THREAD_DEBUG_INFO.lpThreadLocalBase">
+            <summary>
+            the TLS memory block
+            </summary>
+        </member>
+        <member name="F:DebugDotNet.Win32.Structs.CREATE_THREAD_DEBUG_INFO.lpStartAddress">
+            <summary>
+            the entry point of the thread   
+            </summary>
+        </member>
+        <member name="M:DebugDotNet.Win32.Structs.CREATE_THREAD_DEBUG_INFO.GetHashCode">
+            <summary>
+            return a Hash Code for each item in this struct
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:NativeMethods">
+            <summary>
+            Native Mathods class
+            </summary>
+        </member>
+        <member name="M:NativeMethods.ContinueDebugEvent(System.Int32,System.Int32,DebugDotNet.Win32.Enums.ContinueStatus)">
+            <summary>
+            Direct Import of ContinueDebugEvent() from the Win32 Api
+            </summary>
+            <param name="dwProcessId">Process Id of the event to continue</param>
+            <param name="dwThreadId">Thread id of the event to continue</param>
+            <param name="dwContinueStatus">how the debugger (thats you) responded to this</param>
+            <returns></returns>
+        </member>
+        <member name="M:NativeMethods.DebugActiveProcess(System.Int32)">
+            <summary>
+            Direct Import of the DebugActiveProcess from the Win32 Api
+            </summary>
+            <param name="dwProcessId">Debug the process with the specified id</param>
+            <returns></returns>
+        </member>
+        <member name="M:NativeMethods.DebugActiveProcessStop(System.Int32)">
+            <summary>
+            Import of DebugActiveProcessStop
+            </summary>
+            <param name="dwProcessId">Quite debugging this process's id</param>
+            <returns></returns>
+        </member>
+        <member name="M:NativeMethods.WaitForDebugEventEx(DebugDotNet.Win32.Structs.DEBUG_EVENT@,System.UInt32)">
+            <summary>
+            diret input of WaitForDebugEventX
+            </summary>
+            <param name="lpDebugEvent">specify a debug event to hold data (use an instance of DEBUG_EVENT class as a ref)</param>
+            <param name="dwMilliseconds">specifiy timeout</param>
+            <returns>returns true if an event occured within the time trame</returns>
+        </member>
+        <member name="T:DebugEventDotNet.Root.SECURITY_ATTRIBUTES">
+            <summary>
+            c# of SECURITY_ATTRIBUTES
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.SECURITY_ATTRIBUTES.nLength">
+            <summary>
+            length of the struct in bytes
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.SECURITY_ATTRIBUTES.lpSecurityDescriptor">
+            <summary>
+            specifies the SecurityDescriptor;
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.SECURITY_ATTRIBUTES.bInheritHandle">
+            <summary>
+            is this inherited
+            </summary>
+        </member>
+        <member name="T:DebugEventDotNet.Root.DebugProcess">
+            <summary>
+            Intended to launch a new process with the debug flag set. Most of the information exposed
+            via the underlying class won't work. This.Process to get an intance of Process pointed to
+            the handle Process.
+            </summary>
+        </member>
+        <member name="T:DebugEventDotNet.Root.DebugProcess.CreateFlags">
+            <summary>
+            Flags to describe how this process will be debugged
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.CreateFlags.NO_DEBUG">
+            <summary>
+            Launch with no Debug flag
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.CreateFlags.DEBUG_PROCESS">
+            <summary>
+            Launch with debugging this process plus any processors it spawns
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.CreateFlags.DEBUG_ONLY_THIS_PROCESS">
+            <summary>
+            Debug *just* this process
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_FORCEMINIMIZE">
+            <summary>
+            Minimizes a window, even if the thread that owns the window is not responding.This flag should only be used when minimizing windows from a different thread. 
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_HIDE">
+            <summary>
+            //Hides the window and activates another window.
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_MAXIMIZE">
+            <summary>
+            //Maximizes the specified window. 
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_MINIMIZE">
+            <summary>
+            Minimizes the specified window and activates the next top-level window in the Z order.
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_RESTORE">
+            <summary>
+            Activates and displays the window.If the window is minimized or maximized, the system restores it to its original size and position. An application should specify this flag when restoring a minimized window. 
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_SHOW">
+             <summary>
+            Activates the window and displays it in its current size and position.
+             </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_SHOWDEFAULT">
+            <summary>
+            Sets the show state based on the SW_ value specified in the STARTUPINFO structure passed to the CreateProcess function by the program that started the application.
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_SHOWMAXIMIZED">
+            <summary>
+             Activates the window and displays it as a maximized window.
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_SHOWMINIMIZED">
+            <summary>
+            Activates the window and displays it as a minimized window.
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_SHOWMINNOACTIVE">
+            <summary>
+            Displays the window as a minimized window.This value is similar to SW_SHOWMINIMIZED, except the window is not activated. 
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_SHOWNA">
+            <summary>
+            Displays the window in its current size and position.This value is similar to SW_SHOW, except that the window is not activated. 
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_SHOWNOACTIVATE">
+            <summary>
+            Displays a window in its most recent size and position. This value is similar to SW_SHOWNORMAL, except that the window is not activated. 
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.ShowWindow_settings.SW_SHOWNORMAL">
+            <summary>
+            Normal Window
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.pInfo">
+            <summary>
+            PROCESS_INFORMATION struct for CreateProcessor
+            </summary>
+        </member>
+        <member name="F:DebugEventDotNet.Root.DebugProcess.DebugSetting">
+            <summary>
+            Specify how to debug this process
+            </summary>
+        </member>
+        <member name="M:DebugEventDotNet.Root.DebugProcess.Diposing(System.Boolean)">
+            <summary>
+            Safly get rid of handles stored in pInfo
+            </summary>
+            <param name="Man"></param>
+        </member>
+        <member name="M:DebugEventDotNet.Root.DebugProcess.FetchStartupInfo(DebugEventDotNet.Root.STARTUPINFO@)">
+            <summary>
+            setup default startinfo
+            </summary>
+            <param name="start"></param>
+        </member>
+        <member name="P:DebugEventDotNet.Root.DebugProcess.Process">
+            <summary>
+            GetProcess() 
+            </summary>
+        </member>
+        <member name="M:DebugEventDotNet.Root.DebugProcess.GetProcess">
+            <summary>
+            Get the c# process class for this process
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:DebugEventDotNet.Root.DebugProcess.Refresh">
+            <summary>
+            Refresh for ShellExecute Process
+            </summary>
+        </member>
+        <member name="M:DebugEventDotNet.Root.DebugProcess.Start">
+            <summary>
+            Start the process. If shellexcute is true then same as Process.Start()
+            </summary>
+        </member>
+        <member name="M:DebugEventDotNet.Root.DebugProcess.Debug(System.String)">
+            <summary>
+            create the passed process and debug it. 
+            </summary>
+            <param name="app"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

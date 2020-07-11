@@ -1,0 +1,34 @@
+﻿
+
+Namespace space Usages
+
+Namespace DebugDotNet
+	A C# styled aprroach to the debug api. A basic debugger class is ready to capture events in this
+
+
+NameSpace DebugDotNet.Enums
+	Project specific enums go here
+
+	
+
+NameSpace DebugDotNet.Win32
+	Lower level, it is more of a direct wrapping of the Win32 Api and contains static class to call certain NativeMethods
+
+Namespace DebugNotNet.Win32.InternalStructs
+	The structs that the c# friendly ones read from are located here. 
+	Each one's name scheme is a direct lift from the MSDN equivlenet struct with _INTERNAL at the end.
+	
+Namespace DebugDotNet.Win32.Structs
+	The c# friendly structs (one with some processing) are here. Strings are read and converted to c# strings and file handles are swapped
+	to SafeFileHandle invalid.
+
+Namespace DebugDotNet.Tools
+	Misc tools here. Notable the UnmanagedToolKit static class the DebugEvent structs use are here.
+
+
+
+
+
+
+
+
