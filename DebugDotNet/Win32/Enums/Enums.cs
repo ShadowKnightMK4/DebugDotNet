@@ -5,6 +5,25 @@ using System.Text;
 namespace DebugDotNet.Win32.Enums
 {
     /// <summary>
+    /// Specifies how DebugWorkerThread class is begin debugging the target process.
+    /// </summary>
+    public enum DebuggerCreationSettings
+    {
+        /// <summary>
+        /// Attach to running existing program
+        /// </summary>
+        AttachRunningProgram = 1,
+        /// <summary>
+        /// spawn program then attach (same as launching program first) then using AttachRunningProgram
+        /// </summary>
+        RunProgramThenAttach = 2,
+        /// <summary>
+        /// Create the process explicity with the worker thread with the debug flag passed
+        /// </summary>
+        CreateWithDebug = 3
+    };
+
+    /// <summary>
     /// from MSDN Exception Debug Events, this is the type of exception that happened
     /// </summary>
     public enum EXCEPTION_CODE : uint

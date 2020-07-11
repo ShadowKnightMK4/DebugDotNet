@@ -219,7 +219,7 @@ namespace DebugDotNet.Win32.Structs
     /// struct that contains a string received from the Program being debugged class.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public struct OUTPUT_DEBUG_STRING_INFO : IEquatable<OUTPUT_DEBUG_STRING_INFO>
+    public struct OutputDebugStringInfo: IEquatable<OutputDebugStringInfo>
     {
         /// <summary>
         /// The what was emitted or null if some went wrong in retrieved the data. Already Unicode
@@ -234,7 +234,7 @@ namespace DebugDotNet.Win32.Structs
         {
             if (obj == null)
                 return false;
-            if (obj is OUTPUT_DEBUG_STRING_INFO)
+            if (obj is OutputDebugStringInfo)
             {
                 return Equals(obj);
             }
@@ -256,7 +256,7 @@ namespace DebugDotNet.Win32.Structs
         /// <param name="left"></param>
         /// <param name="right"></param>
         /// <returns></returns>
-        public static bool operator ==(OUTPUT_DEBUG_STRING_INFO left, OUTPUT_DEBUG_STRING_INFO right)
+        public static bool operator ==(OutputDebugStringInfo left, OutputDebugStringInfo right)
         {
             return left.Equals(right);
         }
@@ -267,7 +267,7 @@ namespace DebugDotNet.Win32.Structs
         /// <param name="left"></param>
         /// <param name="right"></param>
         /// <returns></returns>
-        public static bool operator !=(OUTPUT_DEBUG_STRING_INFO left, OUTPUT_DEBUG_STRING_INFO right)
+        public static bool operator !=(OutputDebugStringInfo left, OutputDebugStringInfo right)
         {
             return !(left == right);
         }
@@ -277,7 +277,7 @@ namespace DebugDotNet.Win32.Structs
         /// </summary>
         /// <param name="other"></param>
         /// <returns>true if equal otherwise false</returns>
-        public bool Equals(OUTPUT_DEBUG_STRING_INFO other)
+        public bool Equals(OutputDebugStringInfo other)
         {
             return (other.lpDebugStringData == lpDebugStringData);
         }
@@ -395,9 +395,44 @@ namespace DebugDotNet.Win32.Structs
             return ThreadHandle.GetHashCode() + ThreadLocalBaseStart.GetHashCode() + StartRoutineAddress.GetHashCode();
         }
 
+        /// <summary>
+        /// compare a CREATE_THREAD_DEBUG_INFO against another object
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
-            throw new NotImplementedException();
+            if (obj == null)
+                return false;
+            else
+            {
+                if (obj is CREATE_THREAD_DEBUG_INFO)
+                {
+                    return Equals((CREATE_THREAD_DEBUG_INFO)obj);
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// is this equal to CREATE_THREAD_DEBUG_INFO
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public bool Equals(CREATE_THREAD_DEBUG_INFO obj)
+        {
+            if (obj == null)
+                return false;
+            else
+            {
+                if (obj.StartRoutineAddress != StartRoutineAddress)
+                    return false;
+                if (obj.ThreadHandle != ThreadHandle)
+                    return false;
+                if (obj.ThreadLocalBaseStart != ThreadLocalBaseStart)
+                    return false;
+                return true;
+            }
         }
 
         public static bool operator ==(CREATE_THREAD_DEBUG_INFO left, CREATE_THREAD_DEBUG_INFO right)

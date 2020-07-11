@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using static System.Globalization.CultureInfo;
 
 namespace DebugDotNet.Win32.Structs
 {
@@ -18,6 +19,53 @@ namespace DebugDotNet.Win32.Structs
     [StructLayout(LayoutKind.Sequential)]
     public struct DebugEvent : IEquatable<DebugEvent>
     {
+
+        /// <summary>
+        /// get a text friendly view.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            StringBuilder ret = new StringBuilder();
+            ret.Append("{ DebugEvent, ");
+            ret.AppendFormat(InvariantCulture, "Process Id {0}, ", dwProcessId);
+            ret.AppendFormat(InvariantCulture, "Thread Id {0}, ", dwThreadId);
+            ret.AppendFormat(InvariantCulture, "Event Type: {0}, ",  Enum.GetName(typeof(DebugEventType),dwDebugEventCode));
+            switch (dwDebugEventCode)
+            {
+                case DebugEventType.CreateProcessDebugEvent:
+                    ret.Append(CreateProcessInfo.ToString());
+                    break;
+                case DebugEventType.CreateThreadDebugEvent:
+                    ret.Append(CreateThreadInfo.ToString());
+                    break;
+                case DebugEventType.ExceptionDebugEvent:
+                    ret.Append(ExceptionInfo.ToString());
+                    break;
+                case DebugEventType.ExitProcessDebugEvent:
+                    ret.Append(ExitProcessInfo.ToString());
+                    break;
+                case DebugEventType.ExitThreadDebugEvent:
+                    ret.Append(ExitThreadInfo.ToString());
+                    break;
+                case DebugEventType.LoadDllDebugEvent:
+                    ret.Append(LoadDllInfo.ToString());
+                    break;
+                case DebugEventType.OutputDebugStringEvent:
+                    ret.Append(DebugStringInfo.ToString());
+                    break;
+                case DebugEventType.RipEvent:
+                    ret.Append(RipInfo.ToString());
+                    break;
+                case DebugEventType.UnloadDllDebugEvent:
+                    ret.Append(UnloadDllInfo.ToString());
+                    break;
+            }
+            ret.Append("}");
+            return ret.ToString();
+        }
+
+
         /// <summary>
         /// return a hashgcode of this class's members
         /// </summary>
@@ -61,7 +109,7 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// gets the Exception Information 
         /// </summary>
-        public EXCEPTION_DEBUG_INFO Exception
+        public EXCEPTION_DEBUG_INFO ExceptionInfo
         {
             get
             {
@@ -110,7 +158,7 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// Get the CREATE_THREAD_DEBUG_INFO struct
         /// </summary>
-        public CREATE_THREAD_DEBUG_INFO CreateThread
+        public CREATE_THREAD_DEBUG_INFO CreateThreadInfo
         {
             get { return SimpleGetStruct<CREATE_THREAD_DEBUG_INFO>(); }
         }
@@ -176,7 +224,7 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// Get the ExitThread Struct
         /// </summary>
-        public EXIT_THREAD_DEBUG_INFO ExitThread
+        public EXIT_THREAD_DEBUG_INFO ExitThreadInfo
         {
             get
             {
@@ -187,7 +235,7 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// Get the EXIT_PROCESS_INFO struct
         /// </summary>
-        public EXIT_PROCESS_DEBUG_INFO ExitProcess
+        public EXIT_PROCESS_DEBUG_INFO ExitProcessInfo
         {
             get
             {
@@ -200,7 +248,7 @@ namespace DebugDotNet.Win32.Structs
         /// Get the LoadDll info struct
         /// </summary>
 
-        public LOAD_DLL_DEBUG_INFO LoadDll
+        public LOAD_DLL_DEBUG_INFO LoadDllInfo
         {
             get
             {
@@ -246,7 +294,7 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// Get the UNLOAD_DLL_DEBUG_INFO struct
         /// </summary>
-        public UNLOAD_DLL_DEBUG_INFO UnloadDll
+        public UNLOAD_DLL_DEBUG_INFO UnloadDllInfo
         {
             get { return SimpleGetStruct<UNLOAD_DLL_DEBUG_INFO>(); }
         }
@@ -278,7 +326,7 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// Get the DebugInfo for the struct
         /// </summary>
-        public OUTPUT_DEBUG_STRING_INFO DebugString
+        public OutputDebugStringInfo DebugStringInfo
         {
 
             get
@@ -296,7 +344,7 @@ namespace DebugDotNet.Win32.Structs
 
                     OUTPUT_DEBUG_STRING_INTERNAL
                      midresult = (OUTPUT_DEBUG_STRING_INTERNAL)Marshal.PtrToStructure(pointer, typeof(OUTPUT_DEBUG_STRING_INTERNAL));
-                    var result = new OUTPUT_DEBUG_STRING_INFO();
+                    var result = new OutputDebugStringInfo();
 
                     if (midresult.lpStringData != null)
                     {

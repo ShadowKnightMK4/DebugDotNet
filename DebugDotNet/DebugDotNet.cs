@@ -142,8 +142,8 @@ namespace DebugDotNet
 /// </summary>
    internal static class NativeMethods
     {
-
-
+    [DllImport("kernel32.dll", SetLastError =true)]
+    public static extern bool DebugSetProcessKillOnExit(bool KillOnExit);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern UInt32 GetFinalPathNameByHandleW(IntPtr hFile,

@@ -13,4 +13,10 @@
     <PackageReference Include="coverlet.collector" Version="1.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="DebugDotNet">
+      <HintPath>..\DebugDotNet\bin\Debug\netstandard2.0\DebugDotNet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

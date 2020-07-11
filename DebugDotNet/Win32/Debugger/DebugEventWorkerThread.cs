@@ -22,15 +22,22 @@ namespace DebugDotNet.Win32.Debugger
     public class DebugEventCapture
     {
         private readonly Queue<DebugEvent> Event= new Queue<DebugEvent>();
+        
+        /// <summary>
+        /// When this is locked and true we are currently accessing the private query herer
+        /// </summary>
+        private object OpenDoorLock = false;
         /// <summary>
         /// add a new event
         /// </summary>
         /// <param name="EventData">the event to add</param>
         public void PushEvent(DebugEvent EventData)
         {
-            lock (this)
+            lock (OpenDoorLock)
             {
+                OpenDoorLock = true;
                 Event.Enqueue(EventData);
+                OpenDoorLock = false;
             }
         }
 
@@ -40,7 +47,7 @@ namespace DebugDotNet.Win32.Debugger
         /// <returns>the next debug event in the list</returns>
         public DebugEvent PeekEvent()
         {
-            lock (this)
+            lock (OpenDoorLock)
             {
                 return Event.Peek();
             }
@@ -53,9 +60,11 @@ namespace DebugDotNet.Win32.Debugger
         public DebugEvent PullEvent()
         {
             DebugEvent ret;
-            lock (this)
+            lock (OpenDoorLock)
             {
+                OpenDoorLock = true;
                 ret = Event.Dequeue();
+                OpenDoorLock = false;
             }
             return ret;
         }
@@ -66,7 +75,7 @@ namespace DebugDotNet.Win32.Debugger
         /// <returns></returns>
         public int EventCount()
         {
-            lock (this)
+            lock (OpenDoorLock)
             {
                 return Event.Count;
             }
@@ -76,7 +85,7 @@ namespace DebugDotNet.Win32.Debugger
 /// </summary>
         public void ClearEvents()
         {
-            lock (this)
+            lock (OpenDoorLock)
             {
                 Event.Clear();
             }
@@ -118,8 +127,23 @@ namespace DebugDotNet.Win32.Debugger
                 {
 
                 }
-                InternalThread.Dispose();
-                DebugHandle.Dispose();
+
+
+                if (!KillDebugProcessExit)
+                {
+                    NativeMethods.DebugActiveProcessStop(DebugHandle.Id);
+                }
+                else
+                {
+                    NativeMethods.DebugActiveProcessStop(DebugHandle.Id);
+                    DebugHandle.Kill();
+                }
+                
+                
+
+
+                InternalThread?.Dispose();
+                DebugHandle?.Dispose();
                 IsDisposed = true;
             }
         }
@@ -133,55 +157,91 @@ namespace DebugDotNet.Win32.Debugger
             GC.SuppressFinalize(this);
         }
         #endregion
-        /// <summary>
-        /// Choose how to relate DebugEventWorkerThread to the debugged process.
-                /// </summary>
-        public enum CreationSetting
-        {
-            /// <summary>
-            /// Attach to running existing program
-            /// </summary>
-            AttachRunningProgram = 1,
-            /// <summary>
-            /// spawn program then attach (same as launching program first) then using AttachRunningProgram
-            /// </summary>
-            RunProgramThenAttach = 2,
-            /// <summary>
-            /// Create the process explicity with the worker thread with the debug flag passed
-            /// </summary>
-            CreateWithDebug = 3
-        };
+
 
         /// <summary>
-        /// the internal Task 
+        /// If true and (your) debugger quits, this kills the process being debugged. Default is true. See the Msdn Win32 Routine DebugSetProcessKillOnExit
+        /// </summary>
+        public bool KillDebugedProcessOnExit
+        {
+            get
+            {
+                return KillDebugProcessExit;
+            }
+            set
+            {
+                NativeMethods.DebugSetProcessKillOnExit(value);
+                KillDebugProcessExit = value;
+            }
+        }
+
+        private bool KillDebugProcessExit;
+
+
+
+        /// <summary>
+        /// If false we launch a seperate task, create the target (if needed) and monitor for events on that teask
+        /// </summary>
+        public bool SingleThreadMode
+        {
+            get
+            {
+                return SingleThread_int;
+            }
+            set
+            {
+                if (AlreadyRunning)
+                {
+                    throw new InvalidOperationException("Can't set this after Start() has been called");
+                }
+                SingleThread_int = value;
+            }
+        }
+
+        #region Debuging State
+        private bool SingleThread_int;
+
+        /// <summary>
+        /// true if start already called
+        /// </summary>
+        private bool AlreadyRunning;
+        /// <summary>
+        /// the internal Task if SingleThreadMode is calse
         /// </summary>
         readonly Task InternalThread;
         /// <summary>
-        /// the internal handle the Task uses
+        /// the internal handle the Task and this class uses
         /// </summary>
         readonly Process DebugHandle;
         /// <summary>
         /// a shared var; this is locked on assignment via stop.
         /// </summary>
         bool QuitThread = false;
+        #endregion
 
+        #region Debug Event capture
         /// <summary>
         /// the debug event catcher that we push events to as we see them
         /// </summary>
-        public  DebugEventCapture Events { get; set; } = new DebugEventCapture();
+        public DebugEventCapture Events { get; set; } = new DebugEventCapture();
+        #endregion
+
+
         /// <summary>
         /// the creation setting passed at start
         /// </summary>
-        private readonly CreationSetting Setting;
-        
+        /// 
+        private readonly DebuggerCreationSettings Setting;
+
+
         /// <summary>
-        /// the internal thread that watches for debug events and posts them to Events.
+        /// Associate this class instance with the target based on <see cref="Setting"></see>
         /// </summary>
-        void InternalThreadCallback()
+        void AttachDebugtarget()
         {
             switch (Setting)
             {
-                case CreationSetting.AttachRunningProgram:
+                case DebuggerCreationSettings.AttachRunningProgram:
                     {
                         if (Win32DebugApi.DebugActiveProcess(DebugHandle.Id) == false)
                         {
@@ -189,7 +249,7 @@ namespace DebugDotNet.Win32.Debugger
                         }
                         break;
                     }
-                case CreationSetting.RunProgramThenAttach:
+                case DebuggerCreationSettings.RunProgramThenAttach:
                     {
                         DebugHandle.Start();
                         if (Win32DebugApi.DebugActiveProcess(DebugHandle.Id) == false)
@@ -200,7 +260,7 @@ namespace DebugDotNet.Win32.Debugger
                         }
                         break;
                     }
-                case CreationSetting.CreateWithDebug:
+                case DebuggerCreationSettings.CreateWithDebug:
                     {
                         using (DebugProcess tmp = new DebugProcess())
                         {
@@ -213,9 +273,27 @@ namespace DebugDotNet.Win32.Debugger
                     }
                 default:
                     {
-                        throw new InvalidOperationException(Enum.GetName(typeof(CreationSetting), Setting) + " is not supported");
+                        throw new InvalidOperationException(Enum.GetName(typeof(DebuggerCreationSettings), Setting) + " is not supported");
                     }
             }
+        }
+
+        /// <summary>
+        /// The internal (seperate) thread just pumps messages and puts them in the query. There is no other processing
+        /// 
+        /// </summary>
+        void InternalThreadCallback()
+        {
+            DebugEventMessagePump(true, p => { return; });
+        }
+        /// <summary>
+        /// The message pump
+        /// </summary>
+        /// <param name="AutoContinue">If true we just sign off with DBG_REPLY later and keep collecting messages</param>
+        /// <param name="Idle">This is called in the message pump</param>
+        void DebugEventMessagePump(bool AutoContinue, Action<DebugEvent> Idle)
+        {
+            AttachDebugtarget();
 
 
             DebugEvent Event = new DebugEvent();
@@ -225,10 +303,23 @@ namespace DebugDotNet.Win32.Debugger
                 if (Win32DebugApi.WaitForDebugEvent(ref Event,  Win32DebugApi.Infinite) == true)
                 {
                     Events.PushEvent(Event);
-                    if (Win32DebugApi.ContinueDebugEvent(Event.dwProcessId, Event.dwThreadId, ContinueStatus.DBG_CONTINUE) == false)
+                    if (AutoContinue)
                     {
-                        throw new Win32Exception("(ContinueDebugEvent) " + Marshal.GetLastWin32Error());
+                        ContinueStatus Response;
+                        if (Event.dwDebugEventCode == DebugEventType.ExceptionDebugEvent)
+                        {
+                            Response = ContinueStatus.DBG_EXCEPTION_NOT_HANDLED;
+                        }
+                        else
+                        {
+                            Response = ContinueStatus.DBG_CONTINUE;
+                        }
+                        if (Win32DebugApi.ContinueDebugEvent(Event.dwProcessId, Event.dwThreadId, Response) == false)
+                        {
+                            throw new Win32Exception("(ContinueDebugEvent) " + Marshal.GetLastWin32Error());
+                        }
                     }
+                    Idle?.Invoke(Event);
                 }
                 else
                 {
@@ -248,7 +339,7 @@ namespace DebugDotNet.Win32.Debugger
         /// </summary>
         /// <param name="TargetProcess">Process to watch events for</param>
         /// <param name="Setting">How to relate the process to this class instance</param>
-        public DebugEventWorkerThread(Process TargetProcess, CreationSetting Setting)
+        public DebugEventWorkerThread(Process TargetProcess, DebuggerCreationSettings Setting)
         {
             
             if (TargetProcess == null)
@@ -266,12 +357,32 @@ namespace DebugDotNet.Win32.Debugger
 
         }
 
+
+
+        
         /// <summary>
-        /// Spawn the thread to watch for events.
+        /// Start debugging
         /// </summary>
-        public void Start()
+        /// <param name="Idle">Single Thread Only. This is called during the message pump to allow the caller to do things.</param>
+        public void Start(Action<DebugEvent> Idle)
         {
-            InternalThread.Start();
+            if (AlreadyRunning == false)
+            {
+                if (SingleThread_int == false)
+                {
+                    InternalThread.Start();
+                }
+                else
+                {
+                    DebugEventMessagePump(false, Idle);
+                }
+                AlreadyRunning = true;
+            }
+            else
+            {
+                throw new InvalidOperationException("Already running!");
+            }
+            
         }
 
         /// <summary>
