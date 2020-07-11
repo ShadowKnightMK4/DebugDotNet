@@ -13,7 +13,7 @@ This can also serve as an example in how to use the library.
 
 
 
-The other two test folders are non funcation projects to debug the software at the moment. I tend to just modify PeTest as needed and are not terribly familiar with Unit Testing.
+The other two test folders are non functional projects to I use debug the software sometimes. I tend to just modify PeTest as needed and are not terribly familiar with Unit Testing.
 
 
 
