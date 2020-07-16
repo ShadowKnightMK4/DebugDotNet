@@ -7,7 +7,7 @@ namespace DebugDotNet.Win32.Enums
     /// <summary>
     /// Specifies how DebugWorkerThread class is begin debugging the target process.
     /// </summary>
-    public enum DebuggerCreationSettings
+    public enum DebuggerCreationSetting
     {
         /// <summary>
         /// Attach to running existing program
@@ -26,114 +26,120 @@ namespace DebugDotNet.Win32.Enums
     /// <summary>
     /// from MSDN Exception Debug Events, this is the type of exception that happened
     /// </summary>
-    public enum EXCEPTION_CODE : uint
+    public enum ExceptionCode : UInt32
     {
+        /// <summary>
+        /// CTRL-C Pressed in a console app
+        /// </summary>
+        DebugConsoleControlC = 0x40010005,
         /// <summary>
         /// The thread tried to read from or write to a virtual address for which it does not have the appropriate access.  
         /// </summary>
-        EXCEPTION_ACCESS_VIOLATION = 0xC0000005,
-
+        ExceptionAccessViolation = 0xC0000005,
+        
         /// <summary>
         /// The thread tried to access an array element that is out of bounds and the underlying hardware supports bounds checking. 
         /// </summary>
-        EXCEPTION_ARRAY_BOUNDS_EXCEEDED = 0xC000008C,
-
+        ExceptionArrayBoundsExceeded = 0xC000008C,
+        
+        
         /// <summary>
         /// A breakpoint was encountered. 
         /// </summary>
-        EXCEPTION_BREAKPOINT = 0x80000003,
-
+        ExceptionBreakpoint = 0x80000003,
+        
         /// <summary>
         ///The thread tried to read or write data that is misaligned on hardware that does not provide alignment. For example, 16-bit values must be aligned on 2-byte boundaries; 32-bit values on 4-byte boundaries, and so on.  
         /// </summary>
-        EXCEPTION_DATATYPE_MISALIGNMENT = 0x80000002,
+        ExceptionDataTypeMisalignment = 0x80000002,
 
         /// <summary>
         ///  One of the operands in a floating-point operation is denormal. A denormal value is one that is too small to represent as a standard floating-point value. 
         /// </summary>
-        EXCEPTION_FLT_DENORMAL_OPERAND = 0xC000008D,
+        ExceptionFltDenormalOperand = 0xC000008D,
+        
 
         /// <summary>
         /// The thread tried to divide a floating-point value by a floating-point divisor of zero. 
         /// </summary>
-        EXCEPTION_FLT_DIVIDE_BY_ZERO = 0xC000008E,
+        ExceptionFltDivideByZero = 0xC000008E,
 
         /// <summary>
         /// The result of a floating-point operation cannot be represented exactly as a decimal fraction. 
         /// </summary>
-        EXCEPTION_FLT_INEXACT_RESULT = 0xC000008F,
+        ExceptionFltInexactResult = 0xC000008F,
 
         /// <summary>
         /// This exception represents any floating-point exception not included in this list. 
         /// </summary>
-        EXCEPTION_FLT_INVALID_OPERATION = 0xC0000090,
+        ExceptionFltInvalidOperation = 0xC0000090,
 
         /// <summary>
         /// The exponent of a floating-point operation is greater than the magnitude allowed by the corresponding type. 
         /// </summary>
-        EXCEPTION_FLT_OVERFLOW = 0xC0000091,
+        ExceptionFloatOverflow = 0xC0000091,
 
         /// <summary>
         /// The stack overflowed or underflowed as the result of a floating-point operation. 
         /// </summary>
-        EXCEPTION_FLT_STACK_CHECK = 0xC0000092,
+        ExceptionFloatStackCheck = 0xC0000092,
 
         /// <summary>
         ///The exponent of a floating-point operation is less than the magnitude allowed by the corresponding type.  
         /// </summary>
-        EXCEPTION_FLT_UNDERFLOW = 0xC0000093,
+        ExceptionFloatUnderflow = 0xC0000093,
 
         /// <summary>
         /// The thread tried to execute an invalid instruction. 
         /// </summary>
-        EXCEPTION_ILLEGAL_INSTRUCTION = 0xC000001D,
+        ExceptionIllegalInstruction = 0xC000001D,
 
         /// <summary>
         /// The thread tried to access a page that was not present, and the system was unable to load the page. For example, this exception might occur if a network connection is lost while running a program over the network. 
         /// </summary>
-        EXCEPTION_IN_PAGE_ERROR = 0xC0000006,
+        ExceptionInPageError = 0xC0000006,
 
         /// <summary>
         /// The thread tried to divide an integer value by an integer divisor of zero. 
         /// </summary>
-        EXCEPTION_INT_DIVIDE_BY_ZERO = 0xC000009,
+        ExceptionIntDivideByZero = 0xC000009,
 
         /// <summary>
         /// The result of an integer operation caused a carry out of the most significant bit of the result. 
         /// </summary>
-        EXCEPTION_INT_OVERFLOW = 0xC0000095,
+        ExceptionIntOverflow = 0xC0000095,
 
         /// <summary>
         /// An exception handler returned an invalid disposition to the exception dispatcher. Programmers using a high-level language such as C should never encounter this exception.
         /// </summary>
-        EXCEPTION_INVALID_DISPOSITION = 0xC0000026,
+        ExceptionInvalidDispostion = 0xC0000026,
 
         /// <summary>
         /// The thread tried to continue execution after a noncontinuable exception occurred. 
         /// </summary>
-        EXCEPTION_NONCONTINUABLE_EXCEPTION = 0xC0000025,
+        ExceptionNonContinuableException = 0xC0000025,
 
         /// <summary>
         /// The thread tried to execute an instruction whose operation is not allowed in the current machine mode. 
         /// </summary>
-        EXCEPTION_PRIV_INSTRUCTION = 0xC0000096,
+        ExceptionPrivInstruction = 0xC0000096,
 
         /// <summary>
         /// A trace trap or other single-instruction mechanism signaled that one instruction has been executed.
         /// </summary>
-        EXCEPTION_SINGLE_STEP = 0x80000004,
+        ExceptionSingleStep = 0x80000004,
 
         /// <summary>
         /// The thread used up its stack.
         /// </summary>
-        EXCEPTION_STACK_OVERFLOW = 0xC00000FD
+        ExceptionStackOverflow = 0xC00000FD
         
     }
 
     /// <summary>
     /// Specifies what type of Event is contained within the DebugEvent class struct
     /// </summary>
-    public enum DebugEventType : uint
+    public enum DebugEventType 
     {
         /// <summary>
         /// contains a RIP_EVENT_INTERNAL
@@ -181,6 +187,7 @@ namespace DebugDotNet.Win32.Enums
     /// </summary>
     public enum ContinueStatus : uint
     {
+
         /// <summary>
         ///  For exception events, this tells Windows that the event was handled. For all other events this continues the process
         /// </summary>
@@ -188,7 +195,7 @@ namespace DebugDotNet.Win32.Enums
         /// <summary>
         ///  For exception events, this tells Windows that the event was handled. For all other events this continues the process
         /// </summary>
-        DebugContinue = 0x00010002,
+        DebugContinue = DBG_CONTINUE,
 
         /// <summary>
         /// For exception events, tell Windows that your debugger code did not handle the exception
@@ -209,20 +216,23 @@ namespace DebugDotNet.Win32.Enums
     }
 
     /// <summary>
-    /// Descripes how the exception can be dealt with
+    /// What Type of Exception happened (not limited to just these)
     /// </summary>
-    enum ExceptionFlags
+    public enum ExceptionFlagType
     {
         /// <summary>
         /// It's ok to continue running the program
         /// </summary>
-        EXCEPTION_CONTINUEABLE = 0x0,
+        Continuable = 0x0,
         /// <summary>
         /// Program can't continue from here.
         /// </summary>
-        EXCEPTION_NONCONTINUABLE = 0x1
+        NonContinuable = 0x1
     }
 
+    /// <summary>
+    /// Describes A Memory Access violation
+    /// </summary>
     public enum BaseAccessViolation
     {
         /// <summary>
@@ -236,7 +246,11 @@ namespace DebugDotNet.Win32.Enums
         /// <summary>
         /// Target trigged a Data Execution Prevention event
         /// </summary>
-        DEP = 8
+        DEP = 8,
+        /// <summary>
+        /// Something that DebugDotNet does not reconize. 
+        /// </summary>
+        Other = -1,
     }
 
     /// <summary>

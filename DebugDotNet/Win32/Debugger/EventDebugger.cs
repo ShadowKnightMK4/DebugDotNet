@@ -34,7 +34,25 @@ namespace DebugDotNet.Win32.Debugger
         }
 
         /// <summary>
-        /// If set to true this just collects the events to give to user code. By the time it happens. The event is long past
+        /// If true we also debug spawned child processes <see cref="DebugEventWorkerThread.TrackChildProcess"/>
+        /// </summary>
+        public bool DebugSpawnedProceses
+        {
+            get
+            {
+                return Handler.TrackChildProcess;
+            }
+            set
+            {
+                Handler.TrackChildProcess = value;
+            }
+        }
+
+
+
+
+        /// <summary>
+        /// If set to true this class does *NOT* wait for your code to respond. It just tracks the event and savesit for you to look at.
         /// </summary>
         public bool MonitorOnly
         {
@@ -48,6 +66,7 @@ namespace DebugDotNet.Win32.Debugger
             }
         }
 
+  
 
 
         /// <summary>
@@ -89,7 +108,7 @@ namespace DebugDotNet.Win32.Debugger
         /// </summary>
         /// <param name="Start"></param>
         /// <param name="CreationSettings"></param>
-        public EventDebugger(Process Start, DebuggerCreationSettings CreationSettings= DebuggerCreationSettings.RunProgramThenAttach)
+        public EventDebugger(Process Start, DebuggerCreationSetting CreationSettings= DebuggerCreationSetting.RunProgramThenAttach)
         {
             Handler = new DebugEventWorkerThread(Start, CreationSettings);
             CaptureData = new DebugEventCapture();
@@ -157,55 +176,66 @@ namespace DebugDotNet.Win32.Debugger
         /// Triggers when any event is received
         /// </summary>
         /// <param name="EventData">ref to a DebugEvent that already has the data</param>
+        /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void AnyEventCallBack(ref DebugEvent EventData, ref ContinueStatus Response);
 
         /// <summary>
         /// Triggers when an exception happens in the debugged process
         /// </summary>
-        /// <param name="EventData"></param>
+        /// <param name="EventData">Reference to the event this routine received.</param>
+        /// /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void ExceptionEventCallback(ref DebugEvent EventData, ref ContinueStatus Response);
         /// <summary>
-        /// Triggers when a debugged process creates a thread.  The DebugEvent has a <see cref="CREATE_THREAD_DEBUG_INFO"/>
+        /// Triggers when a debugged process creates a thread.  The DebugEvent has a <see cref="CreateThreadDebugInfo"/>
         /// </summary>
-        /// <param name="EventData"></param>
+        /// <param name="EventData">Reference to the event this routine received.</param>
+        /// /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void CreateThreadEventCallback(ref DebugEvent EventData, ref ContinueStatus Response);
         /// <summary>
         /// Triggers when the process is created
         /// </summary>
-        /// <param name="EventData"></param>
+        /// <param name="EventData">Reference to the event this routine received.</param>
+        /// /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void CreateProcessEventCallback(ref DebugEvent EventData, ref ContinueStatus Response);
         /// <summary>
         /// Triggers when a thread ends in the debugged process
         /// </summary>
-        /// <param name="EventData"></param>
+        /// <param name="EventData">Reference to the event this routine received.</param>
+        /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void ExitThreadEventCallback(ref DebugEvent EventData, ref ContinueStatus Response);
         /// <summary>
         /// Triggers when the process loads a dll into its address space
         /// </summary>
-        /// <param name="EventData"></param>
+        /// <param name="EventData">Reference to the event this routine received.</param>
+        /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void LoadDllDebugEventCallback(ref DebugEvent EventData, ref ContinueStatus Response);
         /// <summary>
         /// Triggers when the process has a dll unloaded from its address space
         /// </summary>
-        /// <param name="EventData"></param>
+        /// <param name="EventData">Reference to the event this routine received.</param>
+        /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void UnloadDllDebugEventCallback(ref DebugEvent EventData, ref ContinueStatus Response);
         /// <summary>
         /// Triggers when the process dies outside of system debugger control debugger 
         /// </summary>
-        /// <param name="EventData"></param>
+        /// <param name="EventData">Reference to the event this routine received.</param>
+        /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void RipInfoEventCallback(ref DebugEvent EventData, ref ContinueStatus Response);
 
         /// <summary>
         /// Triggers when the process emitted a debug string
         /// </summary>
-        /// <param name="EventData"></param>
+        /// <param name="EventData">Reference to the event this routine received.</param>
+        /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void OutputDebugStringCallBack(ref DebugEvent EventData, ref ContinueStatus Response);
 
         /// <summary>
         /// Triggers when a process exits
         /// </summary>
-        /// <param name="EventData"></param>
+        /// <param name="EventData">Reference to the event this routine received.</param>
+        /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void ExitProcessEventCallBack(ref DebugEvent EventData, ref ContinueStatus Response);
+
         #endregion
 
 

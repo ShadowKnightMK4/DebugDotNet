@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using DebugEventDotNet.Root;
 using System.Threading;
 using System.Diagnostics;
-using DebugEventDotNet;
+
 using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -12,6 +11,8 @@ using System.Runtime.InteropServices;
 
 using DebugDotNet.Win32.Enums;
 using DebugDotNet.Win32.Structs;
+using DebugDotNet.Win32.Tools;
+using DebugDotNet.Win32.Internal;
 
 namespace DebugDotNet.Win32.Debugger
 {
@@ -26,18 +27,18 @@ namespace DebugDotNet.Win32.Debugger
         /// <summary>
         /// When this is locked and true we are currently accessing the private query herer
         /// </summary>
-        private object OpenDoorLock = false;
+        private object SyncAcessObject = false;
         /// <summary>
         /// add a new event
         /// </summary>
         /// <param name="EventData">the event to add</param>
         public void PushEvent(DebugEvent EventData)
         {
-            lock (OpenDoorLock)
+            lock (SyncAcessObject)
             {
-                OpenDoorLock = true;
+                SyncAcessObject = true;
                 Event.Enqueue(EventData);
-                OpenDoorLock = false;
+                SyncAcessObject = false;
             }
         }
 
@@ -47,7 +48,7 @@ namespace DebugDotNet.Win32.Debugger
         /// <returns>the next debug event in the list</returns>
         public DebugEvent PeekEvent()
         {
-            lock (OpenDoorLock)
+            lock (SyncAcessObject)
             {
                 return Event.Peek();
             }
@@ -60,11 +61,11 @@ namespace DebugDotNet.Win32.Debugger
         public DebugEvent PullEvent()
         {
             DebugEvent ret;
-            lock (OpenDoorLock)
+            lock (SyncAcessObject)
             {
-                OpenDoorLock = true;
+                SyncAcessObject = true;
                 ret = Event.Dequeue();
-                OpenDoorLock = false;
+                SyncAcessObject = false;
             }
             return ret;
         }
@@ -75,7 +76,7 @@ namespace DebugDotNet.Win32.Debugger
         /// <returns></returns>
         public int EventCount()
         {
-            lock (OpenDoorLock)
+            lock (SyncAcessObject)
             {
                 return Event.Count;
             }
@@ -85,7 +86,7 @@ namespace DebugDotNet.Win32.Debugger
 /// </summary>
         public void ClearEvents()
         {
-            lock (OpenDoorLock)
+            lock (SyncAcessObject)
             {
                 Event.Clear();
             }
@@ -98,7 +99,7 @@ namespace DebugDotNet.Win32.Debugger
     
 
     /// <summary>
-    /// Implements Debug Event Watching on a seperate thread.
+    /// Implement a WaitForDebugEvent loop, and Continue Debug Event Loop
     /// </summary>
     public class DebugEventWorkerThread: IDisposable
     {
@@ -129,21 +130,30 @@ namespace DebugDotNet.Win32.Debugger
                 }
 
 
-                if (!KillDebugProcessExit)
-                {
-                    NativeMethods.DebugActiveProcessStop(DebugHandle.Id);
-                }
-                else
-                {
-                    NativeMethods.DebugActiveProcessStop(DebugHandle.Id);
-                    DebugHandle.Kill();
-                }
-                
+                    DebugHandle.ForEach(
+                        p =>
+                        {
+                            if (KillDebugProcessExit)
+                            {
+                                if (p.HasExited == false)
+                                {
+                                    p.Kill();
+                                }
+                            }
+                            else
+                            {
+                                NativeMethods.DebugActiveProcessStop(p.Id);
+                            }
+                        }
+                        );
+         
+                        
+          
                 
 
 
                 InternalThread?.Dispose();
-                DebugHandle?.Dispose();
+                DebugHandle?.ForEach(p => { p?.Dispose(); });
                 IsDisposed = true;
             }
         }
@@ -175,6 +185,9 @@ namespace DebugDotNet.Win32.Debugger
             }
         }
 
+        /// <summary>
+        /// Private variable for <see cref="KillDebugedProcessOnExit"/>. This is also used for Thread sync if needed
+        /// </summary>
         private bool KillDebugProcessExit;
 
 
@@ -192,7 +205,7 @@ namespace DebugDotNet.Win32.Debugger
             {
                 if (AlreadyRunning)
                 {
-                    throw new InvalidOperationException("Can't set this after Start() has been called");
+                    throw new InvalidOperationException(StringMessages.DebugEventWorkerThreadSetSingleThreadModeAfteStart);
                 }
                 SingleThread_int = value;
             }
@@ -206,17 +219,18 @@ namespace DebugDotNet.Win32.Debugger
         /// </summary>
         private bool AlreadyRunning;
         /// <summary>
-        /// the internal Task if SingleThreadMode is calse
+        /// the internal Task if SingleThreadMode is false
         /// </summary>
         readonly Task InternalThread;
         /// <summary>
         /// the internal handle the Task and this class uses
         /// </summary>
-        readonly Process DebugHandle;
+        readonly List<Process> DebugHandle;
         /// <summary>
         /// a shared var; this is locked on assignment via stop.
         /// </summary>
         bool QuitThread = false;
+        private object SyncAccess;
         #endregion
 
         #region Debug Event capture
@@ -228,52 +242,79 @@ namespace DebugDotNet.Win32.Debugger
 
 
         /// <summary>
-        /// the creation setting passed at start
+        /// the creation setting passed at start <see cref="DebugProcess"/> for more information
         /// </summary>
         /// 
-        private readonly DebuggerCreationSettings Setting;
+        private readonly DebuggerCreationSetting Setting;
 
+        /// <summary>
+        /// if the process we debug is a console app, this allocates a new use for the app's use
+        /// </summary>
+        public bool ForceNewConsole { get; set; } = true;
+
+        /// <summary>
+        /// If true we add processes spawned to our internal list and remove them from our internal list
+        /// </summary>
+        public bool TrackChildProcess { get; set; }
 
         /// <summary>
         /// Associate this class instance with the target based on <see cref="Setting"></see>
         /// </summary>
         void AttachDebugtarget()
         {
+            if (DebugHandle.Count == 0)
+            {
+                throw new InvalidOperationException(StringMessages.DebugEventWorkerThreadEmptyInternalList);
+            }
             switch (Setting)
             {
-                case DebuggerCreationSettings.AttachRunningProgram:
+                case DebuggerCreationSetting.AttachRunningProgram:
                     {
-                        if (Win32DebugApi.DebugActiveProcess(DebugHandle.Id) == false)
+                        if (Win32DebugApi.DebugActiveProcess(DebugHandle[0].Id) == false)
                         {
                             throw new Win32Exception(Marshal.GetLastWin32Error());
                         }
                         break;
                     }
-                case DebuggerCreationSettings.RunProgramThenAttach:
+                case DebuggerCreationSetting.RunProgramThenAttach:
                     {
-                        DebugHandle.Start();
-                        if (Win32DebugApi.DebugActiveProcess(DebugHandle.Id) == false)
+                        DebugHandle[0].Start();
+                        if (Win32DebugApi.DebugActiveProcess(DebugHandle[0].Id) == false)
                         {
                             // there was an erroy attaching. Kill spawned process and throw error
-                            DebugHandle.Kill();
+                            DebugHandle[0].Kill();
                             throw new Win32Exception(Marshal.GetLastWin32Error());
                         }
                         break;
                     }
-                case DebuggerCreationSettings.CreateWithDebug:
+                case DebuggerCreationSetting.CreateWithDebug:
                     {
                         using (DebugProcess tmp = new DebugProcess())
                         {
-                            tmp.StartInfo.FileName = DebugHandle.StartInfo.FileName;
-                            tmp.StartInfo.Arguments = DebugHandle.StartInfo.Arguments;
-                            tmp.DebugSetting = DebugProcess.CreateFlags.DEBUG_PROCESS;
+                            tmp.StartInfo.FileName = DebugHandle[0].StartInfo.FileName;
+                            tmp.StartInfo.Arguments = DebugHandle[0].StartInfo.Arguments;
+
+                            if (TrackChildProcess)
+                            {
+                                tmp.DebugSetting = DebugProcess.CreateFlags.DebugProcessAndChild;
+                            }
+                            else
+                            {
+                                tmp.DebugSetting = DebugProcess.CreateFlags.DebugOnlyThisProcess;
+                            }
+                            if (ForceNewConsole)
+                            {
+                                tmp.DebugSetting |= DebugProcess.CreateFlags.ForceNewConsole;
+                            }
+                            tmp.StartInfo.UseShellExecute = false;
                             tmp.Start();
+                            DebugHandle[0] = Process.GetProcessById(tmp.Id);
                         }
                         break;
                     }
                 default:
                     {
-                        throw new InvalidOperationException(Enum.GetName(typeof(DebuggerCreationSettings), Setting) + " is not supported");
+                        throw new InvalidOperationException(Enum.GetName(typeof(DebuggerCreationSetting), Setting) + " is not supported");
                     }
             }
         }
@@ -290,7 +331,7 @@ namespace DebugDotNet.Win32.Debugger
         /// The message pump
         /// </summary>
         /// <param name="AutoContinue">If true we just sign off with DBG_REPLY later and keep collecting messages</param>
-        /// <param name="Idle">This is called in the message pump</param>
+        /// <param name="Idle">This is called in the message pump between <see cref="Win32DebugApi.WaitForDebugEvent(ref DebugEvent, uint)"/> and <see cref="Win32DebugApi.ContinueDebugEvent(int, int, ContinueStatus)"/></param>
         void DebugEventMessagePump(bool AutoContinue, Action<DebugEvent> Idle)
         {
             AttachDebugtarget();
@@ -303,6 +344,34 @@ namespace DebugDotNet.Win32.Debugger
                 if (Win32DebugApi.WaitForDebugEvent(ref Event,  Win32DebugApi.Infinite) == true)
                 {
                     Events.PushEvent(Event);
+                    if (TrackChildProcess)
+                    {
+                        if (Event.dwDebugEventCode == DebugEventType.CreateProcessDebugEvent)
+                        {
+                            if (DebugHandle[0].Id != Event.dwProcessId)
+                            {
+                                DebugHandle.Add(Process.GetProcessById(Event.dwProcessId));
+                            }
+                        }
+                        else
+                        {
+                            if (Event.dwDebugEventCode == DebugEventType.ExitProcessDebugEvent)
+                            {
+                                DebugHandle.RemoveAll(p =>
+                               {
+                                   return (p.Id == Event.dwProcessId);
+                               });
+                            }
+                        }
+
+                        
+                    }
+
+                    if (DebugHandle.Count == 0)
+                    {
+                        // nothing to debug. End loop
+                        QuitThread = true;
+                    }
                     if (AutoContinue)
                     {
                         ContinueStatus Response;
@@ -339,7 +408,7 @@ namespace DebugDotNet.Win32.Debugger
         /// </summary>
         /// <param name="TargetProcess">Process to watch events for</param>
         /// <param name="Setting">How to relate the process to this class instance</param>
-        public DebugEventWorkerThread(Process TargetProcess, DebuggerCreationSettings Setting)
+        public DebugEventWorkerThread(Process TargetProcess, DebuggerCreationSetting Setting)
         {
             
             if (TargetProcess == null)
@@ -349,10 +418,11 @@ namespace DebugDotNet.Win32.Debugger
             InternalThread = new Task(InternalThreadCallback);
             this.Setting = Setting;
             // I want my own copy
-            DebugHandle = new Process
+            DebugHandle = new List<Process>();
+            DebugHandle.Add( new Process
             {
                 StartInfo = TargetProcess.StartInfo
-            };
+            });
 
 
         }
@@ -380,7 +450,7 @@ namespace DebugDotNet.Win32.Debugger
             }
             else
             {
-                throw new InvalidOperationException("Already running!");
+                throw new InvalidOperationException(StringMessages.DebugEventWorkerThreadAlreadyRunning);
             }
             
         }
@@ -414,7 +484,7 @@ namespace DebugDotNet.Win32.Debugger
         /// </summary>
         public void Stop()
         {
-            lock (this)
+            lock (SyncAccess)
             {
                 if (InternalThread.Status == TaskStatus.Running)
                 {

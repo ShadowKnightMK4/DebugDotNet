@@ -98,7 +98,8 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// Raw byte information of the event
         /// </summary>
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 86, ArraySubType = UnmanagedType.U1)]
+        //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 86, ArraySubType = UnmanagedType.U1)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 88, ArraySubType = UnmanagedType.U1)]
         byte[] debugInfo;
 
 
@@ -109,7 +110,7 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// gets the Exception Information 
         /// </summary>
-        public EXCEPTION_DEBUG_INFO ExceptionInfo
+        public ExceptionDebugInfo ExceptionInfo
         {
             get
             {
@@ -121,26 +122,23 @@ namespace DebugDotNet.Win32.Structs
                     pointer = Marshal.AllocHGlobal(structSize);
                     Marshal.Copy(debugInfo, 0, pointer, structSize);
                     var midresult = (EXCEPTION_DEBUG_INFO_INTERNAL)Marshal.PtrToStructure(pointer, typeof(EXCEPTION_DEBUG_INFO_INTERNAL));
-                    var result = new EXCEPTION_DEBUG_INFO
-                    {
-                        dwFirstChance = midresult.dwFirstChance,
-                        ExceptionRecord = new EXCEPTION_RECORD()
-                    };
+                    var result = new ExceptionDebugInfo();
 
                     {
-                        if (midresult.ExceptionRecord.ExceptionFlags == (uint)ExceptionFlags.EXCEPTION_NONCONTINUABLE)
+                        if (midresult.dwFirstChance != 0)
                         {
-                            result.ExceptionRecord.CanContinueException = false;
+                            result.IsFirstChance = true;
                         }
                         else
                         {
-                            result.ExceptionRecord.CanContinueException = true;
+                            result.IsFirstChance = false;
                         }
 
-                        result.ExceptionRecord.ExceptionAddress = midresult.ExceptionRecord.ExceptionAddress;
-                        result.ExceptionRecord.ExceptionInformation = midresult.ExceptionRecord.ExceptionInformation;
-                        result.ExceptionRecord.NumberParameters = midresult.ExceptionRecord.NumberParameters;
-                        result.ExceptionRecord.ExceptionMessage = string.Empty; // TODO fill this out
+                        
+                        ExceptionRecord StartPoint = new ExceptionRecord(midresult.ExceptionRecord);
+                        result.TopLevelException = StartPoint;
+                        
+
 
                     }
                     return result;
@@ -158,9 +156,9 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// Get the CREATE_THREAD_DEBUG_INFO struct
         /// </summary>
-        public CREATE_THREAD_DEBUG_INFO CreateThreadInfo
+        public CreateThreadDebugInfo CreateThreadInfo
         {
-            get { return SimpleGetStruct<CREATE_THREAD_DEBUG_INFO>(); }
+            get { return SimpleGetStruct<CreateThreadDebugInfo>(); }
         }
 
         /// <summary>
@@ -184,8 +182,8 @@ namespace DebugDotNet.Win32.Structs
                     {
                         ret.hFile = new SafeFileHandle(midresult.hFile, true);
 
-                        ret.lpImageName = NativeMethods.GetFinalPathNameByHandle(midresult.hFile, FinalFilePathFlags.VOLUME_NAME_DOS);
-                        ret.lpImageName = UnmangedToolKit.TrimPathProcessingConst(ret.lpImageName);
+                        ret.ImageName = NativeMethods.GetFinalPathNameByHandle(midresult.hFile, FinalFilePathFlags.VOLUME_NAME_DOS);
+                        ret.ImageName = UnmangedToolKit.TrimPathProcessingConst(ret.ImageName);
                     }
                     else
                     {
@@ -195,19 +193,19 @@ namespace DebugDotNet.Win32.Structs
 
                     if (midresult.hProcess != IntPtr.Zero)
                     {
-                        ret.hProcess = midresult.hProcess;
+                        ret.ProcessHandleRaw = midresult.hProcess;
                     }
                     else
                     {
-                        ret.hProcess = IntPtr.Zero;
+                        ret.ProcessHandleRaw = IntPtr.Zero;
                     }
 
-                    ret.hThread = midresult.hThread;
-                    ret.lpBaseOfImage = midresult.lpBaseOfImage;
-                    ret.lpStartAddress = midresult.lpStartAddress;
-                    ret.lpThreadLocalBase = midresult.lpThreadLocalBase;
-                    ret.nDebugInfoSize = midresult.nDebugInfoSize;
-                    ret.dwDebugInfoFileOffset = midresult.dwDebugInfoFileOffset;
+                    ret.ThreadHandleRaw = midresult.hThread;
+                    ret.BaseOfImage = midresult.lpBaseOfImage;
+                    ret.StartAddress = midresult.lpStartAddress;
+                    ret.ThreadLocalBase = midresult.lpThreadLocalBase;
+                    ret.DebugInfoSize = midresult.nDebugInfoSize;
+                    ret.DebugInfoFileOffset = midresult.dwDebugInfoFileOffset;
                     return ret;
                 }
                 finally
@@ -224,22 +222,22 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// Get the ExitThread Struct
         /// </summary>
-        public EXIT_THREAD_DEBUG_INFO ExitThreadInfo
+        public ExitThreadDebugInfo ExitThreadInfo
         {
             get
             {
-                return SimpleGetStruct<EXIT_THREAD_DEBUG_INFO>();
+                return new ExitThreadDebugInfo(SimpleGetStruct<ExitThreadDebugInfo>().ExitCode);
             }
         }
 
         /// <summary>
         /// Get the EXIT_PROCESS_INFO struct
         /// </summary>
-        public EXIT_PROCESS_DEBUG_INFO ExitProcessInfo
+        public ExitProcessDebugInfo ExitProcessInfo
         {
             get
             {
-                return SimpleGetStruct<EXIT_PROCESS_DEBUG_INFO>();
+                return new ExitProcessDebugInfo(SimpleGetStruct<EXIT_PROCESS_DEBUG_INFO_INTERNAL>().dwExitCode);
             }
         }
 
@@ -248,34 +246,34 @@ namespace DebugDotNet.Win32.Structs
         /// Get the LoadDll info struct
         /// </summary>
 
-        public LOAD_DLL_DEBUG_INFO LoadDllInfo
+        public LoadDllDebugInfo LoadDllInfo
         {
             get
             {
                 IntPtr pointer = IntPtr.Zero;
-                var structSize = Marshal.SizeOf(typeof(LOAD_DLL_DEBUG_INFO));
+                var structSize = Marshal.SizeOf(typeof(LoadDllDebugInfo));
 
                 try
                 {
                     pointer = Marshal.AllocHGlobal(structSize);
                     Marshal.Copy(debugInfo, 0, pointer, structSize);
                     var midresult = (LOAD_DLL_DEBUG_INFO_INTERNAL)Marshal.PtrToStructure(pointer, typeof(LOAD_DLL_DEBUG_INFO_INTERNAL));
-                    var result = new LOAD_DLL_DEBUG_INFO();
+                    var result = new LoadDllDebugInfo();
 
                     if (midresult.hFile != IntPtr.Zero)
                     {
-                        result.hFile = new SafeFileHandle(midresult.hFile, true);
+                        result.FileHandle = new SafeFileHandle(midresult.hFile, true);
                         result.lpImageName = NativeMethods.GetFinalPathNameByHandle(midresult.hFile, FinalFilePathFlags.VOLUME_NAME_DOS);
                         result.WasBad = false;
                     }
                     else
                     {
-                        result.hFile = null;
+                        result.FileHandle = null;
                         result.lpImageName = string.Empty;
                         result.WasBad = true;
                     }
 
-                    result.lpBaseOfDll = midresult.lpBaseOfDll;
+                    result.BaseDllAddress = midresult.lpBaseOfDll;
                     result.nDebugInfoSize = midresult.nDebugInfoSize;
                     result.dwDebugInfoFileOffset = midresult.dwDebugInfoFileOffset;
 
@@ -294,9 +292,11 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// Get the UNLOAD_DLL_DEBUG_INFO struct
         /// </summary>
-        public UNLOAD_DLL_DEBUG_INFO UnloadDllInfo
+        public UnloadDllDebugInfo UnloadDllInfo
         {
-            get { return SimpleGetStruct<UNLOAD_DLL_DEBUG_INFO>(); }
+            get {
+                return new UnloadDllDebugInfo(SimpleGetStruct<UNLOAD_DLL_DEBUG_INFO_INTERNAL>().lpBaseOfDll);
+            }
         }
 
         /// <summary>
@@ -384,8 +384,8 @@ namespace DebugDotNet.Win32.Structs
                     RIP_INFO_INTERNAL midresult = (RIP_INFO_INTERNAL)Marshal.PtrToStructure(pointer, typeof(RIP_INFO_INTERNAL));
                     var result = new RipInfo
                     {
-                        dwType = (RipInfo.ErrorType)midresult.dwType,
-                        dwError = midresult.dwError
+                        ErrorType = (RipInfo.ErrorTypeEnum)midresult.dwType,
+                        ErrorCode = midresult.dwError
                     };
                     return result;
                 }
@@ -407,29 +407,16 @@ namespace DebugDotNet.Win32.Structs
         public override bool Equals(object obj)
         {
             if (obj == null)
-                return false;
-            if (obj.GetType() != this.GetType())
             {
                 return false;
             }
             else
             {
-                DebugEvent e = (DebugEvent)obj;
-                if (e.dwProcessId != this.dwProcessId)
-                    return false;
-                if (e.dwThreadId != this.dwThreadId)
+                if (obj is DebugEvent)
                 {
-                    return false;
+                    return Equals((DebugEvent)obj);
                 }
-                if (e.dwDebugEventCode != this.dwDebugEventCode)
-                {
-                    return false;
-                }
-                else
-                {
-                    // TODO: comare the sub structs of each thing
-                }
-                return true;
+                return false;
             }
         }
 
@@ -455,9 +442,35 @@ namespace DebugDotNet.Win32.Structs
             return !(left == right);
         }
 
+
+        /// <summary>
+        /// compare the DebugEvent other with this one
+        /// </summary>
+        /// <param name="other">check against</param>
+        /// <remarks>Specialzed Versi</remarks>
+        /// <returns>true if they are the same</returns>
         public bool Equals(DebugEvent other)
         {
-            return other.Equals(this);
+            if (other == null)
+                return false;
+            else
+            {
+                if (other.dwProcessId != this.dwProcessId)
+                    return false;
+                if (other.dwThreadId != this.dwThreadId)
+                {
+                    return false;
+                }
+                if (other.dwDebugEventCode != this.dwDebugEventCode)
+                {
+                    return false;
+                }
+                else
+                {
+                    // TODO: comare the sub structs of each thing
+                }
+                return true;
+            }
         }
     }
 

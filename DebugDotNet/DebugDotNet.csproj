@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="DebugEventHandlerApi.xml" />
     <None Remove="readme.txt" />
   </ItemGroup>
 
@@ -23,6 +24,21 @@
 
   <ItemGroup>
     <Folder Include="Win32\Process\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="StringMessages.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>StringMessages.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="StringMessages.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>StringMessages.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

@@ -3,14 +3,14 @@
 How to use this class library.
 
 	[Win32DebugApi] static class contains indirect public imports to the library's NativeMethods class that directly imports several direct 
-	Win32 kernel routines for the debugging part.
+	Win32 api routines for the debugging part.
 
 
 	[DebugEvent] class is heavily modified from DEBUG_EVENT struct example code on pinvoke.net.  It's a core part of this library. When an event
 	happens this structure is filled out with the event data.  
 
 
-	In the namespace at  DebugDotNet.Win32.Debugger.EventDebugger lives a class that already wraps the message pump and exposes c# events / callbacks
+	In the namespace at  DebugDotNet.Win32.Debugger lives a class named EventDebugger that already wraps the message pump and exposes c# events / callbacks
 your code can subscribe too.
 
 

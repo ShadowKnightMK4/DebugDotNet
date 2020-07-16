@@ -29,45 +29,66 @@ namespace DebugDotNet.Win32.Internal
      /// <returns>results of the thread</returns>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1051:Do not declare visible instance fields", Justification = "The internal structs care about byte location. I can't seem to figure how to do this with fields.")]
 
+    [Obsolete("This parameter points to the virtual address in the debugged process. C# compains when marshaling this sometimes to the struct we use")]
+    internal delegate uint PThreadStartRoutine(IntPtr lpThreadParameter);
 
-    public delegate uint PTHREAD_START_ROUTINE(IntPtr lpThreadParameter);
 
+  
 
     /// <summary>
-    ///The CreateDebugThreadInfo structure before any processing
+    /// The in memory structer that we eventual convert to <see cref="ExitThreadDebugInfo"/>
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
+    internal struct EXIT_THREAD_DEBUG_INFO_INTERNAL
+    { 
+        /// <summary>
+        /// the exit code for the thread
+        /// </summary>
+        public uint dwExitCode;
+
+    }
+        /// <summary>
+        ///The in memory form of <see cref="CreateThreadDebugInfo"/> structure before any processing
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
     internal struct CREATE_THREAD_DEBUG_INFO_INTERNAL
     {
         /// <summary>
-        ///  the raw hThread handle
+        ///  the raw hThread handle. Resolves to <see cref="CreateThreadDebugInfo.ThreadHandle"/>
         /// </summary>
         public IntPtr hThread;
         /// <summary>
-        /// the TLS memory block
+        /// The pointer to the start of the TLS memory block. Resolves to <see cref="CreateThreadDebugInfo.ThreadLocalBaseStart"/>
         /// </summary>
         public IntPtr lpThreadLocalBase;
         /// <summary>
-        /// the entry point of the thread
+        /// the entry point of the thread in the vitual address space of the process being debugged. This Resolves to <see cref="CreateThreadDebugInfo.StartRoutineAddress"/>
         /// </summary>
-        public PTHREAD_START_ROUTINE lpStartAddress;
+        public IntPtr lpStartAddress;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct EXIT_PROCESS_DEBUG_INFO_INTERNAL
+    {
+        public uint dwExitCode;
+    }
+
 
     /// <summary>
     /// The internal direct memory struct of RipInfo is made from.
     /// <see cref="RipInfo"/>
     /// </summary>
 
-    [StructLayout(LayoutKind.Sequential)]
+   [StructLayout(LayoutKind.Sequential)]
     internal struct RIP_INFO_INTERNAL : IEquatable<RIP_INFO_INTERNAL>
     {
         /// <summary>
-        /// from MSDN RIP_INFO:   The error that caused the RIP debug event.  Resolves to <seealso cref="RipInfo.dwError"/>
+        /// from MSDN RIP_INFO:   The error that caused the RIP debug event.  Resolves to <seealso cref="RipInfo.ErrorCode"/>
         /// </summary>
         public uint dwError;
 
         /// <summary>
-        /// contains the value that specifies the type off error that thappens.  Resolvesto <seealso cref="RipInfo.dwType"/>
+        /// contains the value that specifies the type off error that thappens.  Resolvesto <seealso cref="RipInfo.ErrorType"/>
         /// </summary>
         public uint dwType;
 
@@ -149,6 +170,21 @@ namespace DebugDotNet.Win32.Internal
 
  
     }
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct UNLOAD_DLL_DEBUG_INFO_INTERNAL
+    {
+        /// <summary>
+        /// The base address of the dll that was unloaded
+        /// </summary>
+        public IntPtr lpBaseOfDll { get; set; }
+
+        public UnloadDllDebugInfo GetPublic()
+        {
+            return new UnloadDllDebugInfo(lpBaseOfDll);
+        }
+    }
+       
+
 
     /// <summary>
     /// The internal direct memory struct that <seealso cref="CreateProcessDebugInfo"/> is made from
@@ -161,35 +197,36 @@ namespace DebugDotNet.Win32.Internal
         /// </summary>
         public IntPtr hFile;
         /// <summary>
-        /// If non-zero then it is handle to the process being debugged. Resolves to <see cref="CreateProcessDebugInfo.hProcess"/>
+        /// If non-zero then it is handle to the process being debugged. Resolves to <see cref="CreateProcessDebugInfo.ProcessHandleRaw"/>
         /// </summary>
         public IntPtr hProcess;
         /// <summary>
-        /// Handle to the starting thread of the prcess debug debugged. Resolves to <see cref="CreateProcessDebugInfo.hThread"/>
+        /// Handle to the starting thread of the prcess debug debugged. Resolves to <see cref="CreateProcessDebugInfo.ThreadHandleRaw"/>
         /// </summary>
         public IntPtr hThread;
         /// <summary>
-        /// Pointet to the image base. Resolves to <see cref="CreateProcessDebugInfo.lpBaseOfImage"/>
+        /// Pointet to the image base. Resolves to <see cref="CreateProcessDebugInfo.BaseOfImage"/>
         /// </summary>
         public IntPtr lpBaseOfImage;
         /// <summary>
-        /// Points to the locatation when the debug info is stored in the file <see cref="CreateProcessDebugInfo.dwDebugInfoFileOffset"/>
+        /// Points to the locatation when the debug info is stored in the file <see cref="CreateProcessDebugInfo.DebugInfoFileOffset"/>
         /// </summary>
         public uint dwDebugInfoFileOffset;
         /// <summary>
-        /// How big is this block of debug info <see cref="CreateProcessDebugInfo.nDebugInfoSize"/>
+        /// How big is this block of debug info <see cref="CreateProcessDebugInfo.DebugInfoSize"/>
         /// </summary>
         public uint nDebugInfoSize;
         /// <summary>
-        /// Points to thread local storage <see cref="CreateProcessDebugInfo.lpThreadLocalBase"/>
+        /// Points to thread local storage <see cref="CreateProcessDebugInfo.ThreadLocalBase"/>
         /// </summary>
         public IntPtr lpThreadLocalBase;
+
         /// <summary>
         /// Points to Proces Entry point. Does not have equivelent in <see cref="CreateProcessDebugInfo"/>
         /// </summary>
-        public PTHREAD_START_ROUTINE lpStartAddress;
+        public IntPtr lpStartAddress;
         /// <summary>
-        /// pointer null terminated string (ANSI or UNICODE) if non zero . <see cref="CreateProcessDebugInfo.lpImageName"/>
+        /// pointer null terminated string (ANSI or UNICODE) if non zero . <see cref="CreateProcessDebugInfo.ImageName"/>
         /// </summary>
         public IntPtr lpImageName;
         /// <summary>
@@ -260,14 +297,23 @@ namespace DebugDotNet.Win32.Internal
 
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct EXCEPTION_RECORD_INTERNAL
+    internal struct EXCEPTION_RECORD_INTERNAL 
     {
         public uint ExceptionCode;
         public uint ExceptionFlags;
         public IntPtr ExceptionRecord;
         public IntPtr ExceptionAddress;
         public uint NumberParameters;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15, ArraySubType = UnmanagedType.U4)] public uint[] ExceptionInformation;
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15, ArraySubType = UnmanagedType.U4)] 
+        public uint[] ExceptionInformation;
+        
+        public ExceptionRecord Convert()
+        {
+            ExceptionRecord ret = new ExceptionRecord(this);
+            return ret;
+        }
+
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -285,19 +331,19 @@ namespace DebugDotNet.Win32.Internal
         /// convert this to the convention version
         /// </summary>
         /// <returns></returns>
-        public LOAD_DLL_DEBUG_INFO ToLoadDllDebugInfo()
+        public LoadDllDebugInfo ToLoadDllDebugInfo()
         {
-            LOAD_DLL_DEBUG_INFO result = new LOAD_DLL_DEBUG_INFO();
+            LoadDllDebugInfo result = new LoadDllDebugInfo();
             if (hFile != null)
             {
-                result.hFile = new SafeFileHandle(hFile, true);
+                result.FileHandle = new SafeFileHandle(hFile, true);
                 result.lpImageName = NativeMethods.GetFinalPathNameByHandle(hFile, FinalFilePathFlags.FILE_NAME_NORMALIZED);
             }
             else
             {
-                result.hFile = null;
+                result.FileHandle = null;
             }
-            result.lpBaseOfDll = lpBaseOfDll;
+            result.BaseDllAddress = lpBaseOfDll;
 
 
             result.nDebugInfoSize = nDebugInfoSize;

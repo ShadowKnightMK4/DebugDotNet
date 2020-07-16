@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
+using DebugDotNet.Win32.Internal;
 
 namespace DebugDotNet.Win32.Tools
 {
@@ -156,8 +157,7 @@ namespace DebugDotNet.Win32.Tools
                     LocalUnmanged = Marshal.AllocHGlobal(AllotSize);
                     Memset((byte*)LocalUnmanged.ToPointer(), 0, (uint)AllotSize);
 
-                    IntPtr BytesRead;
-                    if (NativeMethods.ReadProcessMemory(TargetProcess, BaseAddress, LocalUnmanged, AllotSize, out BytesRead) == true)
+                    if (NativeMethods.ReadProcessMemory(TargetProcess, BaseAddress, LocalUnmanged, AllotSize, out IntPtr BytesRead) == true)
                     {
                         ret = ExtractLocalString(LocalUnmanged, BytesRead.ToInt32(), Unicode);
                     }

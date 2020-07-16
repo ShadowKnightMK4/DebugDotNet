@@ -6,10 +6,11 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Runtime.ConstrainedExecution;
 using System.ComponentModel;
-using DebugEventDotNet.Root;
-using DebugDotNet.Win32.Tools;
+using System.Globalization;
+using System.Threading;
+using DebugDotNet.Win32.Internal;
 
-namespace DebugEventDotNet.Root
+namespace DebugDotNet.Win32.Tools
 {
     // This also works with CharSet.Ansi as long as the calling function uses the same character set.
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -45,10 +46,10 @@ namespace DebugEventDotNet.Root
     }
 
     /// <summary>
-    /// c# of SECURITY_ATTRIBUTES
+    /// c# of SecurityAttributes
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public struct SECURITY_ATTRIBUTES
+    internal struct SecurityAttributes
     {
         /// <summary>
         /// length of the struct in bytes
@@ -74,20 +75,24 @@ namespace DebugEventDotNet.Root
         /// Flags to describe how this process will be debugged
         /// </summary>
         [Flags]
-        public enum CreateFlags : uint
+        public enum CreateFlags : int
         {
             /// <summary>
             /// Launch with no Debug flag
             /// </summary>
-            NO_DEBUG = 0x00000000,
+            DoNotDebug = 0x00000000,
             /// <summary>
             /// Launch with debugging this process plus any processors it spawns
             /// </summary>
-            DEBUG_PROCESS = 0x00000001,
+            DebugProcessAndChild = 0x00000001,
             /// <summary>
             /// Debug *just* this process
             /// </summary>
-            DEBUG_ONLY_THIS_PROCESS = 0x00000002
+            DebugOnlyThisProcess = 0x00000002,
+            /// <summary>
+            /// If the target is a console app, this forces a new console rather than using the one (you) have
+            /// </summary>
+            ForceNewConsole = 0x00000010
         }
 
         [Flags]
@@ -138,7 +143,7 @@ namespace DebugEventDotNet.Root
             /// <summary>
             ///  Activates the window and displays it as a maximized window.
             /// </summary>
-            SW_SHOWMAXIMIZED = 3,
+            SW_SHOWMAXIMIZED =  SW_MAXIMIZE,
 
             /// <summary>
             /// Activates the window and displays it as a minimized window.
@@ -176,10 +181,21 @@ namespace DebugEventDotNet.Root
         /// </summary>
         private PROCESS_INFORMATION pInfo;
 
+
+        /// <summary>
+        /// Get the id of the process after it's been made
+        /// </summary>
+        public new int Id => pInfo.dwProcessId;
+
         /// <summary>
         /// Specify how to debug this process
         /// </summary>
-        public CreateFlags DebugSetting = CreateFlags.NO_DEBUG;
+        public CreateFlags DebugSetting { get; set; } = CreateFlags.DoNotDebug;
+
+        /// <summary>
+        /// used to check if the process is still alive before returning cerrtain values
+        /// </summary>
+        const int StillActive = 259;
 
 
         /// <summary>
@@ -188,8 +204,9 @@ namespace DebugEventDotNet.Root
         /// <param name="Man"></param>
         protected void Diposing(bool Man)
         {
-            CloseHandle(pInfo.hProcess);
-            CloseHandle(pInfo.hThread);
+            
+           NativeMethods.CloseHandle(pInfo.hProcess);
+            NativeMethods.CloseHandle(pInfo.hThread);
 
             base.Dispose(Man);
         }
@@ -215,9 +232,10 @@ namespace DebugEventDotNet.Root
                 start.wShowWindow = (short)ShowWindow_settings.SW_SHOWNORMAL;
             }
 
-            if (this.StartInfo.UserName != string.Empty)
+            if ((string.IsNullOrEmpty(StartInfo.UserName) == false))
             {
-                throw new NotImplementedException("DebugProcess class does not support specifying a username");
+                throw new NotImplementedException(StringMessages.DebugProcessNoUserNameAllowed);
+
             }
 
 
@@ -232,20 +250,24 @@ namespace DebugEventDotNet.Root
         {
             IntPtr err = IntPtr.Zero;
             int e;
-            if (GetExitCodeProcess(this.pInfo.hProcess, ref err) == true)
+            if (NativeMethods.GetExitCodeProcess(pInfo.hProcess, ref err) == true)
             {
                 e = err.ToInt32();
-                if (e == 259)  // STILL_ACTIVE
-                    return Process.GetProcessById(pInfo.dwProcessId);
+                if (e == StillActive)  // STILL_ACTIVE
+                    return GetProcessById(pInfo.dwProcessId);
+#pragma warning disable CA1303 // Do not pass literals as localized parameters
                 throw new InvalidOperationException("Process already quit");
+#pragma warning restore CA1303 // Do not pass literals as localized parameters
             }
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         }
-        
+
+
         /// <summary>
         /// Refresh for ShellExecute Process
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
         public new void Refresh()
         {
             if (StartInfo.UseShellExecute == true)
@@ -263,11 +285,9 @@ namespace DebugEventDotNet.Root
         /// </summary>
         public new void Start()
         {
-            //PROCESS_INFORMATION pInfo = new PROCESS_INFORMATION();
-            STARTUPINFO lpStartupInfo ;
-#pragma warning disable CS0219 // The variable 'Default' is assigned but its value is never used
-            SECURITY_ATTRIBUTES Default = new SECURITY_ATTRIBUTES();
-#pragma warning restore CS0219 // The variable 'Default' is assigned but its value is never used
+#pragma warning disable CS0219 // The variable '_Default' is assigned but its value is never used
+            SecurityAttributes _Default = new SecurityAttributes();
+#pragma warning restore CS0219 // The variable '_Default' is assigned but its value is never used
 
             string arguments;
             string currentdir;
@@ -279,8 +299,8 @@ namespace DebugEventDotNet.Root
                 }
                 else
                 {
-                    FetchStartupInfo(out lpStartupInfo);
-                    if (StartInfo.Arguments != string.Empty)
+                    FetchStartupInfo(out STARTUPINFO lpStartupInfo);
+                    if (string.IsNullOrEmpty(StartInfo.Arguments) == false)
                     {
                         arguments = StartInfo.Arguments;
                     }
@@ -289,7 +309,7 @@ namespace DebugEventDotNet.Root
                         arguments = null;
                     }
 
-                    if (StartInfo.WorkingDirectory != string.Empty)
+                    if ( (string.IsNullOrEmpty(StartInfo.WorkingDirectory) == false))
                     {
                         currentdir = StartInfo.WorkingDirectory;
                     }
@@ -298,7 +318,7 @@ namespace DebugEventDotNet.Root
                         currentdir = null;
                     }
 
-                    if (CreateProcessW(StartInfo.FileName, arguments, IntPtr.Zero, IntPtr.Zero, true, (uint)DebugSetting, IntPtr.Zero, currentdir, ref lpStartupInfo, out pInfo))
+                    if (NativeMethods.CreateProcessW(StartInfo.FileName, arguments, IntPtr.Zero, IntPtr.Zero, true, (uint)DebugSetting, IntPtr.Zero, currentdir, ref lpStartupInfo, out pInfo))
                     {
                     
                     }
@@ -314,11 +334,11 @@ namespace DebugEventDotNet.Root
             {
                 if (pInfo.hProcess != ((IntPtr)(-1)))
                 {
-//                    CloseHandle(pInfo.hProcess);
+                    NativeMethods.CloseHandle(pInfo.hProcess);
                 }
                 if (pInfo.hThread != ((IntPtr)(-1)))
                 {
-  //                  CloseHandle(pInfo.hThread);
+                    NativeMethods.CloseHandle(pInfo.hThread);
                 }
             }
         }
@@ -331,7 +351,7 @@ namespace DebugEventDotNet.Root
         {
             PROCESS_INFORMATION pInfo = new PROCESS_INFORMATION();
             STARTUPINFO lpStartupInfo = new STARTUPINFO();
-            SECURITY_ATTRIBUTES Default = new SECURITY_ATTRIBUTES();
+            SecurityAttributes Default = new SecurityAttributes();
             Process Ret;
             string args;
             Default.bInheritHandle = 0;
@@ -356,7 +376,7 @@ namespace DebugEventDotNet.Root
             }
             try
             {
-                if (CreateProcessW(app, null, IntPtr.Zero, IntPtr.Zero, true, (uint)DebugSetting, IntPtr.Zero,  null, ref lpStartupInfo, out pInfo))
+                if (NativeMethods.CreateProcessW(app, null, IntPtr.Zero, IntPtr.Zero, true, (uint)DebugSetting, IntPtr.Zero,  null, ref lpStartupInfo, out pInfo))
                 {
                     Ret = Process.GetProcessById(pInfo.dwProcessId);
                     return Ret;
@@ -367,45 +387,17 @@ namespace DebugEventDotNet.Root
             {
                 if (pInfo.hProcess != ((IntPtr)(-1)))
                 {
-                    CloseHandle(pInfo.hProcess);
+                    NativeMethods.CloseHandle(pInfo.hProcess);
                 }
                 if (pInfo.hThread != ((IntPtr)(-1)))
                 {
-                    CloseHandle(pInfo.hThread);
+                    NativeMethods.CloseHandle(pInfo.hThread);
                 }
                 Marshal.FreeHGlobal(noargs);
             }
         }
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool CloseHandle(IntPtr hObject);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool GetExitCodeProcess(IntPtr hProcesss, ref IntPtr pExitCode);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool CreateProcessW(
-            [MarshalAs(UnmanagedType.LPWStr)]
-            string lpApplicationName,
-    
-            [MarshalAs(UnmanagedType.LPWStr)]
-            string lpArgs,
 
-            IntPtr lpProcessAttributes,
-            IntPtr lpThreadAttributes,
-    
-            bool bInheritHandles,
-   
-            uint dwCreationFlags,
-   
-   
-            IntPtr lpEnvironment,
-   
-            [MarshalAs(UnmanagedType.LPWStr)]
-            string lpCurrentDirectory,
-   [In] ref STARTUPINFO lpStartupInfo,
-   out PROCESS_INFORMATION lpProcessInformation);
+
       }
 }
