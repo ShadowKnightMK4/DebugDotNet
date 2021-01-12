@@ -1,0 +1,4 @@
+LIBRARY "Detours.dll"
+EXPORTS
+DetourCreateProcessWithDllExW @1
+DetourCreateProcessWithDllsW @2

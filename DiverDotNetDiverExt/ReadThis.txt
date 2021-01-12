@@ -1,0 +1,21 @@
+﻿
+
+DiverDotNetDiverExt library.
+
+This class is effectively an extension to DebugDotNet.
+
+It introduces a new namespace at 
+
+DebugDotNet.Win32.Diver
+
+DebugDotNet.Win32.Diver.Enum
+DebugDotNet.Win32.Diver.Structs
+
+
+
+This extension is a communication library for the Diver to talk with a debugger. It uses the DebugDotNet library
+with is free and under the MIT license.
+
+
+This extension however; is licensed differently and is free for non-commercial use only. Using this in a commerical
+setting requires either a purchased liscense from myself or written permission. 

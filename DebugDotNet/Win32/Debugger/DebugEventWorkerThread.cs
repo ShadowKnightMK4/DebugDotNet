@@ -96,12 +96,12 @@ namespace DebugDotNet.Win32.Debugger
     }
 
 
-    
+
 
     /// <summary>
     /// Implement a WaitForDebugEvent loop, and Continue Debug Event Loop
     /// </summary>
-    public class DebugEventWorkerThread: IDisposable
+    public class DebugEventWorkerThread : IDisposable
     {
         #region IDisposble and isDisposed
         /// <summary>
@@ -130,29 +130,38 @@ namespace DebugDotNet.Win32.Debugger
                 }
 
 
-                    DebugHandle.ForEach(
-                        p =>
+                DebugHandle.ForEach(
+                    p =>
+                    {
+                        if (KillDebugProcessExit)
                         {
-                            if (KillDebugProcessExit)
+                            if (p.HasExited == false)
                             {
-                                if (p.HasExited == false)
-                                {
-                                    p.Kill();
-                                }
-                            }
-                            else
-                            {
-                                NativeMethods.DebugActiveProcessStop(p.Id);
+                                p.Kill();
                             }
                         }
-                        );
-         
+                        else
+                        {
+                            NativeMethods.DebugActiveProcessStop(p.Id);
+                        }
+                    }
+                    );
+
+
+
+
+
+                if (InternalThread != null)
+                {
+                    if ( (InternalThread.IsCompleted == true) || (InternalThread.IsFaulted == true) || (InternalThread.IsCanceled) == true)
+                    {
+                        InternalThread?.Dispose();
+                    }
+                    else
+                    {
                         
-          
-                
-
-
-                InternalThread?.Dispose();
+                    }
+                }
                 DebugHandle?.ForEach(p => { p?.Dispose(); });
                 IsDisposed = true;
             }
@@ -242,6 +251,11 @@ namespace DebugDotNet.Win32.Debugger
 
 
         /// <summary>
+        /// For <see cref="DebuggerCreationSetting.CreateWithDebug"/> only. This specifies a list of dlls to force the target to load at start. Requires the Detour Helper dll
+        /// </summary>
+        public List<string> ForceLoadDll { get;  } = new List<string>();
+
+        /// <summary>
         /// the creation setting passed at start <see cref="DebugProcess"/> for more information
         /// </summary>
         /// 
@@ -265,6 +279,11 @@ namespace DebugDotNet.Win32.Debugger
             if (DebugHandle.Count == 0)
             {
                 throw new InvalidOperationException(StringMessages.DebugEventWorkerThreadEmptyInternalList);
+            }
+            if ( (Setting != DebuggerCreationSetting.CreateWithDebug ) && 
+                 (ForceLoadDll.Count != 0))
+            {
+                throw new InvalidOperationException("ForceLoadDll should contain no elements unless Setting= DebuggerCreationSetting.CreateWithDebug");
             }
             switch (Setting)
             {
@@ -294,17 +313,18 @@ namespace DebugDotNet.Win32.Debugger
                             tmp.StartInfo.FileName = DebugHandle[0].StartInfo.FileName;
                             tmp.StartInfo.Arguments = DebugHandle[0].StartInfo.Arguments;
 
+                            ForceLoadDll.ForEach(p => { tmp.ForceLoadDlls.Add(p); });
                             if (TrackChildProcess)
                             {
-                                tmp.DebugSetting = DebugProcess.CreateFlags.DebugProcessAndChild;
+                                tmp.DebugSetting = CreateFlags.DebugProcessAndChild;
                             }
                             else
                             {
-                                tmp.DebugSetting = DebugProcess.CreateFlags.DebugOnlyThisProcess;
+                                tmp.DebugSetting = CreateFlags.DebugOnlyThisProcess;
                             }
                             if (ForceNewConsole)
                             {
-                                tmp.DebugSetting |= DebugProcess.CreateFlags.ForceNewConsole;
+                                tmp.DebugSetting |= CreateFlags.ForceNewConsole;
                             }
                             tmp.StartInfo.UseShellExecute = false;
                             tmp.Start();

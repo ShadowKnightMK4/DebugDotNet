@@ -12,6 +12,117 @@ using Microsoft.Win32.SafeHandles;
 namespace DebugDotNet.Win32.Structs
 {
 
+    /// <summary>
+    /// When a Call to <see cref="NativeMethods.CreateProcessW(string, string, IntPtr, IntPtr, bool, uint, IntPtr, string, ref STARTUPINFO, out ProcessInformation)"/> returns. This structure is filled out with information. This corasponds with Win32 Api structure at https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-process_information for more info
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ProcessInformation : IEquatable<ProcessInformation>
+    {
+        /// <summary>
+        /// The Raw Handle Value for the process. User Should call <see cref="NativeMethods.CloseHandle(IntPtr)"/> when finished.
+        /// </summary>
+        public IntPtr ProcessHandleRaw { get; set; }
+        /// <summary>
+        /// The Raw Handle Value for the main Thread. User Should call <see cref="NativeMethods.CloseHandle(IntPtr)"/> when finished.
+        /// </summary>
+        public IntPtr ThreadHandleRaw { get; set; }
+        /// <summary>
+        /// A number that specifies the ID of thie process
+        /// </summary>
+        public int ProcessId { get; set; }
+        /// <summary>
+        /// A number that specifies the ID of the main thread
+        /// </summary>
+        public int ThreadMainId { get; set; }
+
+        /// <summary>
+        /// Compare an arbitrary object with this <see cref="ProcessInformation"/> struct
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+            {
+                return false;
+            }
+            else
+            {
+                if (obj is ProcessInformation information)
+                {
+                    return Equals(information);
+                }
+                return false;
+            }
+        }
+        /// <summary>
+        /// get hash code of this structure's elements
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            return ProcessId.GetHashCode() + ThreadMainId.GetHashCode() + ProcessHandleRaw.GetHashCode() + ThreadHandleRaw.GetHashCode();
+        }
+
+        /// <summary>
+        /// Are left and right the same
+        /// </summary>
+        /// <param name="left">left side to compare </param>
+        /// <param name="right">right side to compare</param>
+        /// <returns>true if they are same</returns>
+        public static bool operator ==(ProcessInformation left, ProcessInformation right)
+        {
+            return left.Equals(right);
+        }
+
+        /// <summary>
+        /// if left differetn from right
+        /// </summary>
+        /// <param name="left">left side to compare </param>
+        /// <param name="right">right side to compare</param>
+        /// <returns>true if different</returns>
+        public static bool operator !=(ProcessInformation left, ProcessInformation right)
+        {
+            return !(left == right);
+        }
+
+        /// <summary>
+        /// compare two <see cref="ProcessInformation"/> structs
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(ProcessInformation other)
+        {
+            if (other == null)
+            {
+                return false;
+            }
+            else
+            {
+                if (other.ProcessId != ProcessId)
+                {
+                    return false;
+                }
+
+                if (other.ThreadMainId != ThreadMainId)
+                {
+                    return false;
+                }
+                if (other.ProcessHandleRaw != ProcessHandleRaw)
+                {
+                    return false;
+                }
+
+                if (other.ThreadHandleRaw != ThreadHandleRaw)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+    }
+
+
 
     /// <summary>
     /// Exit Thread struct as returned via DebugEvent.ExitThread; 
@@ -43,9 +154,9 @@ namespace DebugDotNet.Win32.Structs
                 return false;
             else
             {
-                if (obj is ExitThreadDebugInfo)
+                if (obj is ExitThreadDebugInfo info)
                 {
-                    return Equals((ExitThreadDebugInfo)obj);
+                    return Equals(info);
                 }
                 return false;
             }
@@ -128,9 +239,9 @@ namespace DebugDotNet.Win32.Structs
                 return false;
             else
             {
-                if (obj is ExitProcessDebugInfo)
+                if (obj is ExitProcessDebugInfo info)
                 {
-                    return Equals((ExitProcessDebugInfo)obj);
+                    return Equals(info);
                 }
                 return false;
             }
@@ -206,16 +317,16 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// the offset into the debug info of the dll
         /// </summary>
-        public uint dwDebugInfoFileOffset { get; set; }
+        public uint DebugInfoFileOffset { get; set; }
         /// <summary>
         /// the debug info size
         /// </summary>
-        public uint nDebugInfoSize { get; set; }
+        public uint DebugInfoSize { get; set; }
         /// <summary>
-        /// a string that specifies the dll's name. 
-        /// for this freindly version this is derhived on hFile also being valid.
+        /// A string that specifies the dll's name. 
+        /// This is resolved by placing a call to <see cref="NativeMethods.GetFinalPathNameByHandle(IntPtr, FinalFilePathFlags)"/>, assuming the <see cref="LOAD_DLL_DEBUG_INFO_INTERNAL.hFile"/> (An Internal struct receives a valid handle to the Dll's file location 
         /// </summary>
-        public string lpImageName { get; set; }
+        public string ImageName { get; set; }
         /// <summary>
         /// set to True if the string could name be read (or a problem happend)
         /// </summary>
@@ -244,11 +355,11 @@ namespace DebugDotNet.Win32.Structs
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return dwDebugInfoFileOffset.GetHashCode() +
+            return DebugInfoFileOffset.GetHashCode() +
                 FileHandle.GetHashCode() +
                 BaseDllAddress.GetHashCode() +
-                lpImageName.GetHashCode() +
-                nDebugInfoSize.GetHashCode() +
+                ImageName.GetHashCode() +
+                DebugInfoSize.GetHashCode() +
                 WasBad.GetHashCode();
         }
 
@@ -290,17 +401,17 @@ namespace DebugDotNet.Win32.Structs
             else
             {
                 {
-                    if (other.dwDebugInfoFileOffset != dwDebugInfoFileOffset)
+                    if (other.DebugInfoFileOffset != DebugInfoFileOffset)
                         return false;
                     if (other.FileHandle != FileHandle)
                         return false;
                     if (other.BaseDllAddress != BaseDllAddress)
                         return false;
-                    if (other.nDebugInfoSize != nDebugInfoSize)
+                    if (other.DebugInfoSize != DebugInfoSize)
                         return false;
                     if (other.WasBad != WasBad)
                         return false;
-                    if (other.lpImageName != lpImageName)
+                    if (other.ImageName != ImageName)
                         return false;
                 }
                 return true;
@@ -382,9 +493,9 @@ namespace DebugDotNet.Win32.Structs
             }
             else
             {
-                if (obj is RipInfo)
+                if (obj is RipInfo info)
                 {
-                    return Equals((RipInfo)obj);
+                    return Equals(info);
                 }
                 return false;
             }
@@ -479,9 +590,9 @@ namespace DebugDotNet.Win32.Structs
                 return false;
             else
             {
-                if (obj is CreateProcessDebugInfo)
+                if (obj is CreateProcessDebugInfo info)
                 {
-                    return Equals((CreateProcessDebugInfo)obj);
+                    return Equals(info);
                 }
                 return false;
             }
@@ -573,7 +684,12 @@ namespace DebugDotNet.Win32.Structs
     public struct ExceptionRecord : IEquatable<ExceptionRecord>
     {
 
-        internal void FetchNestedRecord(IntPtr other, ref List<ExceptionRecord> ChainWalk)
+        /// <summary>
+        /// Walk through the exception list (if the Other is not null and build a list of the linked exceptions)
+        /// </summary>
+        /// <param name="other">pointer to <see cref="EXCEPTION_RECORD_INTERNAL.ExceptionRecord"/></param>
+        /// <param name="ChainWalk">reference to list to build the chain of exceptions</param>
+        static internal void FetchNestedRecord(IntPtr other, ref List<ExceptionRecord> ChainWalk)
         {
             EXCEPTION_RECORD_INTERNAL tmp = (EXCEPTION_RECORD_INTERNAL)Marshal.PtrToStructure(other, typeof(EXCEPTION_RECORD_INTERNAL));
             FetchNestedRecord(tmp, ref ChainWalk);
@@ -583,7 +699,7 @@ namespace DebugDotNet.Win32.Structs
         /// </summary>
         /// <param name="other">we start with this one</param>
         /// <param name="ChainWalk">and add the ones we find to this one</param>
-        internal void FetchNestedRecord(EXCEPTION_RECORD_INTERNAL other, ref List<ExceptionRecord> ChainWalk)
+        internal static void FetchNestedRecord(EXCEPTION_RECORD_INTERNAL other, ref List<ExceptionRecord> ChainWalk)
         {
             ChainWalk = new List<ExceptionRecord>();
             if (other.ExceptionRecord != IntPtr.Zero)
@@ -648,7 +764,7 @@ namespace DebugDotNet.Win32.Structs
                 IntPtr Stepper = StartingPoint.ExceptionRecord;
                 while (Stepper != IntPtr.Zero)
                 {
-                    this.FetchNestedRecord(Stepper, ref NestedRecordVal);
+                    FetchNestedRecord(Stepper, ref NestedRecordVal);
                     Stepper = IntPtr.Zero;
                 }
             }
@@ -709,9 +825,9 @@ namespace DebugDotNet.Win32.Structs
             }
             else
             {
-                if (obj is ExceptionRecord)
+                if (obj is ExceptionRecord record)
                 {
-                    return Equals((ExceptionRecord)obj);
+                    return Equals(record);
                 }
                 return false;
             }
@@ -852,9 +968,9 @@ namespace DebugDotNet.Win32.Structs
             }
             else
             {
-                if (obj is ExceptionDebugInfo)
+                if (obj is ExceptionDebugInfo info)
                 {
-                    return Equals((ExceptionDebugInfo)obj);
+                    return Equals(info);
                 }
                 return false;
             }
@@ -952,7 +1068,7 @@ namespace DebugDotNet.Win32.Structs
         /// <summary>
         /// The what was emitted or null if some went wrong in retrieved the data. Already Unicode
         /// </summary>
-        public string lpDebugStringData { get; set; }
+        public string DebugStringData { get; set; }
         /// <summary>
         /// Compare OUTPUT_DEBUG_STRING_INFO against this object
         /// </summary>
@@ -975,7 +1091,7 @@ namespace DebugDotNet.Win32.Structs
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return lpDebugStringData.GetHashCode();
+            return DebugStringData.GetHashCode();
         }
 
         /// <summary>
@@ -1007,7 +1123,7 @@ namespace DebugDotNet.Win32.Structs
         /// <returns>true if equal otherwise false</returns>
         public bool Equals(OutputDebugStringInfo other)
         {
-            return (other.lpDebugStringData == lpDebugStringData);
+            return (other.DebugStringData == DebugStringData);
         }
     }
 
@@ -1143,9 +1259,9 @@ namespace DebugDotNet.Win32.Structs
                 return false;
             else
             {
-                if (obj is CreateThreadDebugInfo)
+                if (obj is CreateThreadDebugInfo CreateThreadInfo)
                 {
-                    return Equals((CreateThreadDebugInfo)obj);
+                    return Equals(CreateThreadInfo);
                 }
                 return false;
             }

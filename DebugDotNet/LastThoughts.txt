@@ -1,0 +1,5 @@
+﻿-- for closing thoughts in the coding session.
+
+
+consider adding a CreateProcess dummy to the Diver? or the Custom Detour Dll that
+wraps into reading a memory structure to create a job to lock down stuff.

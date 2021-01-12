@@ -1,0 +1,5 @@
+LIBRARY TestDllLoad
+EXPORT
+DllMain @1
+
+

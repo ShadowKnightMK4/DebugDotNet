@@ -104,5 +104,32 @@ namespace DebugDotNet {
                 return ResourceManager.GetString("DebugProcessNoUserNameAllowed", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Specifying a non empty envorment is not currently supported for the detours wrapper for {0}.
+        /// </summary>
+        internal static string DetourMarshalCreateProcessNonNullEnviroment {
+            get {
+                return ResourceManager.GetString("DetourMarshalCreateProcessNonNullEnviroment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Marshaling the {0} SecurityAttribute to a IntPtr valued.
+        /// </summary>
+        internal static string DetourMarshalCreateProcessWithDll_OutOfMemory {
+            get {
+                return ResourceManager.GetString("DetourMarshalCreateProcessWithDll_OutOfMemory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bad Marshal for Data type {0}.
+        /// </summary>
+        internal static string DetourMarshalRemoteMarshalFailure {
+            get {
+                return ResourceManager.GetString("DetourMarshalRemoteMarshalFailure", resourceCulture);
+            }
+        }
     }
 }

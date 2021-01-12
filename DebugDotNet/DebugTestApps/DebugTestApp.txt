@@ -1,0 +1,10 @@
+﻿This folder contains small C/C+= projects to do things to see if how the debugger (event debug)
+will response.
+
+They are typically named afet what they will do. 
+Example:
+
+TestCaseNullReference tries to deference a null pointer which triggers a EXCEPTION_NULL_REFERENCE.
+
+It also tries to divide by zero and explicity raise a null refernece with RaiseException() and SEH
+

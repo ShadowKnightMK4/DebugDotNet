@@ -1,0 +1,11 @@
+LIBRARY DebugDotNetDiver
+EXPORTS
+DetourFinishHelperProcess @1
+DllMain @9
+RaiseExceptionDiverCheck @2
+RaiseExceptionTrackFunc @3
+DetourTransactionBegin @4
+DetourAttach @5
+DetourDetach @6
+DetourTransactionCommit @7
+DetourUpdateThread @8

@@ -182,7 +182,7 @@ namespace DebugDotNet.Win32.Structs
                     {
                         ret.hFile = new SafeFileHandle(midresult.hFile, true);
 
-                        ret.ImageName = NativeMethods.GetFinalPathNameByHandle(midresult.hFile, FinalFilePathFlags.VOLUME_NAME_DOS);
+                        ret.ImageName = NativeMethods.GetFinalPathNameByHandle(midresult.hFile, FinalFilePathFlags.VolumeNameDos);
                         ret.ImageName = UnmangedToolKit.TrimPathProcessingConst(ret.ImageName);
                     }
                     else
@@ -263,19 +263,19 @@ namespace DebugDotNet.Win32.Structs
                     if (midresult.hFile != IntPtr.Zero)
                     {
                         result.FileHandle = new SafeFileHandle(midresult.hFile, true);
-                        result.lpImageName = NativeMethods.GetFinalPathNameByHandle(midresult.hFile, FinalFilePathFlags.VOLUME_NAME_DOS);
+                        result.ImageName = NativeMethods.GetFinalPathNameByHandle(midresult.hFile, FinalFilePathFlags.VolumeNameDos);
                         result.WasBad = false;
                     }
                     else
                     {
                         result.FileHandle = null;
-                        result.lpImageName = string.Empty;
+                        result.ImageName = string.Empty;
                         result.WasBad = true;
                     }
 
                     result.BaseDllAddress = midresult.lpBaseOfDll;
-                    result.nDebugInfoSize = midresult.nDebugInfoSize;
-                    result.dwDebugInfoFileOffset = midresult.dwDebugInfoFileOffset;
+                    result.DebugInfoSize = midresult.nDebugInfoSize;
+                    result.DebugInfoFileOffset = midresult.dwDebugInfoFileOffset;
 
                     return result;
                 }
@@ -348,11 +348,27 @@ namespace DebugDotNet.Win32.Structs
 
                     if (midresult.lpStringData != null)
                     {
-                        result.lpDebugStringData = UnmangedToolKit.ExtractString(this.dwProcessId, midresult.lpStringData, (IntPtr)midresult.nDebugStringLength, UnmangedToolKit.UShortToBool(midresult.fUnicode));
+                        if (midresult.nDebugStringLength == ushort.MaxValue)
+                        {
+                            // this will be large string and may not be the whole length.
+                            result.DebugStringData = UnmangedToolKit.ExtractString(this.dwProcessId, midresult.lpStringData, IntPtr.Zero, UnmangedToolKit.UShortToBool(midresult.fUnicode));
+                        }
+                        else
+                        {
+                            if (midresult.fUnicode == 0)
+                            {
+                                result.DebugStringData = UnmangedToolKit.ExtractString(this.dwProcessId, midresult.lpStringData, (IntPtr)midresult.nDebugStringLength, UnmangedToolKit.UShortToBool(midresult.fUnicode));
+                            }
+                            else
+                            {
+                                result.DebugStringData = UnmangedToolKit.ExtractString(this.dwProcessId, midresult.lpStringData, (IntPtr)(midresult.nDebugStringLength /2), UnmangedToolKit.UShortToBool(midresult.fUnicode));
+                            }
+                            
+                        }
                     }
                     else
                     {
-                        result.lpDebugStringData = null;
+                        result.DebugStringData = null;
                     }
                     return result;
                 }
@@ -412,9 +428,9 @@ namespace DebugDotNet.Win32.Structs
             }
             else
             {
-                if (obj is DebugEvent)
+                if (obj is DebugEvent Data)
                 {
-                    return Equals((DebugEvent)obj);
+                    return Equals(Data);
                 }
                 return false;
             }

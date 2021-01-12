@@ -6,12 +6,12 @@ using DebugDotNet.Win32.Enums;
 using DebugDotNet.Win32.Structs;
 using DebugDotNet.Win32.Internal;
 using System.Resources;
+using System.Runtime.CompilerServices;
 
-[assembly: NeutralResourcesLanguage("en")]
 namespace DebugDotNet
 {
 
-    /* The intial structures posted on pinvoke.et for DEBUG_EVENT are a launch pad into this.
+    /* The initial structures posted on pinvoke.et for DEBUG_EVENT are a launch pad into this.
      * 
      *  naming scheme for the structs
         SOMETHING_INTERNAL      <-  this struct is directly marshaled from unmanaged memory with no processing
@@ -28,14 +28,14 @@ namespace DebugDotNet
      */
 
     /// <summary>
-    /// Approach at  a lower level. This lies closer to our internale <see cref="NativeMethods"/> class
+    /// Approach at  a lower level. This lies closer to our internal <see cref="NativeMethods"/> class
     /// </summary>
     public  sealed class Win32DebugApi
         {
             private static bool DebugPrivFlag = false;
 
             /// <summary>
-            /// Set or clear the SE_DEBUG_PRIV privilege.  Doing this without pinvoke.net seems to require admin
+            /// Set or clear the SE_DEBUG_PRIV privilege.  Doing this without pinvoke.net seems to require Admin privilege
             /// </summary>
             public static bool DebugPriv
             {
@@ -48,12 +48,12 @@ namespace DebugDotNet
                     if (value == true)
                     {
                         Process.EnterDebugMode();
-                        // set the priv
+                       // set the privilege
                     }
                     else
                     {
-                        // remove the priv
-                        Process.LeaveDebugMode();
+                    // remove the privilege
+                    Process.LeaveDebugMode();
                     }
                     DebugPrivFlag = value;
                 }
@@ -61,16 +61,18 @@ namespace DebugDotNet
 
 
             /// <summary>
-            ///  the INVALID_HANDLE value for CreateProcess
+            ///  the INVALID_HANDLE C/C++ value for CreateProcess and other Windows API Kin
             /// </summary>
             public static readonly IntPtr InvalidHandleValue = new IntPtr(-1);
 
             /// <summary>
-            /// If you call WaitForDebugEventEx() with this as the timeout it waits until an event occures
+            /// If you call WaitForDebugEventEx() with this as the timeout it waits until an event occurs
             /// </summary>
             public static readonly uint Infinite = 0xFFFFFFFF;
 
 
+ 
+        
             /// <summary>
             /// Wait until a debug event happens.
             /// </summary>
@@ -87,7 +89,7 @@ namespace DebugDotNet
         /// <summary>
         /// Tell Windows what to do with the debug event after your code is done handling it
         /// </summary>
-        /// <param name="dwProcessId">process id of event receiced</param>
+        /// <param name="dwProcessId">process id of event received</param>
         /// <param name="dwThreadId">thread id of event received</param>
         /// <param name="continueStatus">tell windows how your debugger responded</param>
         /// <returns>the results of calling the NativeMethods.ContinueDebugEvent() </returns>
@@ -108,7 +110,7 @@ namespace DebugDotNet
             return NativeMethods.DebugActiveProcessStop(dwProcessId);
         }
         /// <summary>
-        /// Debug target process with specified it. HIGH CHANCE of Evivated Admin privilage needed
+        /// Debug target process with specified it. HIGH CHANCE of Elevated Admin privilege needed
         /// </summary>
         /// <param name="dwProcessId">the process id to debug</param>
         /// <returns>if the call worked or not</returns>

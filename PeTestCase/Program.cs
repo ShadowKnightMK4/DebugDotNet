@@ -9,7 +9,7 @@ using System.Diagnostics;
 using DebugDotNet.Win32.Structs;
 using DebugDotNet.Win32.Enums;
 using DebugDotNet.Win32.Symbols;
-
+using DebugDotNet.Win32.Threads;
 namespace PeTestCase
 {
     class Program
@@ -23,7 +23,8 @@ namespace PeTestCase
             Process T = new Process
             {
                 //StartInfo = new ProcessStartInfo("C:\\Windows\\system32\\notepad.exe")
-                StartInfo = new ProcessStartInfo("C:\\WINDOWS\\system32\\cmd.exe")
+                StartInfo = new ProcessStartInfo("C:\\Users\\Thoma\\source\\repos\\DebugDotNet\\DebugDotNet\\Debug\\TestFollowCreateFile.exe")
+                //StartInfo = new ProcessStartInfo("C:\\WINDOWS\\system32\\cmd.exe")
             //    StartInfo = new ProcessStartInfo("C:\\Users\\Thoma\\source\\repos\\DebugDotNet\\DebugDotNet\\DebugTestApps\\Debug\\TestCaseNullReference.exe")
             };
 
@@ -39,6 +40,11 @@ namespace PeTestCase
             Test.EndDebugProcessOnQuit = false;
             Test.MonitorOnly = false;
             Test.DebugSpawnedProceses = true;
+            Test.AddForceLoadDllRange(new List<string> { "C:\\Users\\Thoma\\source\\repos\\DebugDotNet\\DebugDotNet\\Debug\\TestDllLoad.dll" });
+
+            Test.TrackingModules = true;
+
+
             Test.Start();
      
        
@@ -56,6 +62,7 @@ namespace PeTestCase
                 Console.WriteLine(Code.ToString());
             }
             
+
 
         }
 
@@ -102,17 +109,23 @@ namespace PeTestCase
             {
                 Console.WriteLine("Test code for dbg help called");
             }
+
+            Console.WriteLine("Enumerating Threads");
+            
             Console.WriteLine("Test code cleanup is ok");
         }
 
         private static void Test_LoadDllDebugEvent(ref DebugDotNet.Win32.Structs.DebugEvent EventData, ref DebugDotNet.Win32.Enums.ContinueStatus Response)
         {
-            Console.WriteLine(EventData.LoadDllInfo.lpImageName);
+            Console.WriteLine(EventData.LoadDllInfo.ImageName);
+            
+            
         }
 
         private static void Test_OutputDebugStringEvent(ref DebugDotNet.Win32.Structs.DebugEvent EventData, ref DebugDotNet.Win32.Enums.ContinueStatus Response)
         {
-            Console.WriteLine(EventData.DebugStringInfo.lpDebugStringData);
+            Console.WriteLine(EventData.DebugStringInfo.DebugStringData);
+            var result = DebugDotNetThreads.GetProcessThreads(Process.GetProcessById(EventData.dwProcessId));
         }
 
 

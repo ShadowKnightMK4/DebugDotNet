@@ -9,17 +9,162 @@ using DebugDotNet.Win32.Structs;
 namespace DebugDotNet.Win32.Debugger
 {
     /// <summary>
+    /// EventDebugger Tracks Loaded Dlls in a dictionary of these
+    /// </summary>
+    public struct EventDebuggerLoadedDll : IEquatable<EventDebuggerLoadedDll>
+    {
+        /// <summary>
+        /// Name of the Dll, can be Null if the debugger could not get the file the dll is from
+        /// </summary>
+        public string Name;
+        /// <summary>
+        /// Base Memory of the Dll in the debugged process's memory
+        /// </summary>
+        public IntPtr BaseLocation;
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+            {
+                return false;
+            }
+            else
+            {
+                if (!(obj is EventDebuggerLoadedDll DllOther))
+                {
+                    return false;
+                }
+                else return Equals(DllOther);
+            }
+        }
+
+        /// <summary>
+        /// get a hash of each element
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            return this.BaseLocation.GetHashCode() + this.Name.GetHashCode();
+        }
+
+        /// <summary>
+        /// Compare left and right if equal
+        /// </summary>
+        /// <param name="left">left side</param>
+        /// <param name="right">right side</param>
+        /// <returns>true if equal</returns>
+        public static bool operator ==(EventDebuggerLoadedDll left, EventDebuggerLoadedDll right)
+        {
+            return left.Equals(right);
+        }
+        /// <summary>
+        /// Compare left and right if NOT equal
+        /// </summary>
+        /// <param name="left">left side</param>
+        /// <param name="right">right side</param>
+        /// <returns>true if different</returns>
+        public static bool operator !=(EventDebuggerLoadedDll left, EventDebuggerLoadedDll right)
+        {
+            return !(left == right);
+        }
+
+        /// <summary>
+        /// is other equal to this?
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(EventDebuggerLoadedDll other)
+        {
+           if (other == null)
+            {
+                return false;
+            }
+           else
+            {
+                if (other.BaseLocation != BaseLocation)
+                {
+                    return false;
+                }
+                if (other.Name != Name)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+    }
+
+
+    /// <summary>
     /// Exposed events to subscribe to various Win32 event posts (DEBUG_EVENT, ect...)
     /// If you Subscribe to the General one wou'll be getting the same event 2x. Plan accordingly.
     /// </summary>
     public class EventDebugger: IDisposable
     {
+
         DebugEventWorkerThread Handler;
         DebugEventCapture CaptureData;
         DebugEvent ReadyToDispatch = new DebugEvent();
 
         /// <summary>
-        /// Tell Windows what ppens to the program being debugged when the debugged ends. See MSDN DebugSetProcessKillOnExit()
+        /// Retrieve a list of Dlls that have be seen via the debugger.
+        /// </summary>
+        public Dictionary<IntPtr, EventDebuggerLoadedDll> TrackedDlls
+        {
+            get
+            {
+                if (LoadedModules == null)
+                {
+                    LoadedModules = new Dictionary<IntPtr, EventDebuggerLoadedDll>();
+                }
+                return LoadedModules;
+            }
+        }
+        Dictionary<IntPtr, EventDebuggerLoadedDll> LoadedModules = new Dictionary<IntPtr, EventDebuggerLoadedDll>();
+        #region debugger control flags and settings
+
+        /// <summary>
+        /// if set to true we keep a running list of loaded libraries (DLLs)
+        /// </summary>
+        public bool TrackingModules
+        { 
+            get
+            {
+                return TrackingModulesInt;
+            }
+            set
+            {
+                TrackingModulesInt = value;
+            }
+        }
+
+        /// <summary>
+        /// If set to true we keep a running list of created threads 
+        /// </summary>
+        public bool TrackingThreads
+        { 
+            get
+            {
+                return TrackingThreadsInt;
+            }
+            set
+            {
+                TrackingThreadsInt = value;
+            }
+        }
+
+
+        /// <summary>
+        /// If set we track Dll Load and Unloads, and accociate them to a name
+        /// </summary>
+        bool TrackingModulesInt;
+        /// <summary>
+        /// if Set we track Thread Creation and Exit
+        /// </summary>
+        bool TrackingThreadsInt;
+
+        /// <summary>
+        /// Tell Windows what Hpppens to the program being debugged when the debugged ends. See MSDN DebugSetProcessKillOnExit()
         /// </summary>
         public bool EndDebugProcessOnQuit
         {
@@ -65,10 +210,11 @@ namespace DebugDotNet.Win32.Debugger
                 return Handler.SingleThreadMode;
             }
         }
+        #endregion
 
-  
 
 
+        #region disposal and destructors
         /// <summary>
         /// destructor
         /// </summary>
@@ -102,7 +248,27 @@ namespace DebugDotNet.Win32.Debugger
             GC.SuppressFinalize(this);
         }
 
+        #endregion
 
+        #region Forced Dll Loaded
+        /// <summary>
+        /// <see cref="DebuggerCreationSetting.CreateWithDebug"/> only.  Clear any previously added dlls to be forced to load
+        /// </summary>
+        public void ClearForceLoadDll()
+        {
+            Handler.ForceLoadDll.Clear();
+        }
+        /// <summary>
+        /// <see cref="DebuggerCreationSetting.CreateWithDebug"/> only. This adds dlls that we'll force the spawned process to load with <see cref="NativeHelpers.Detours.DetoursWrappers.DetourCreateProcessWithDllEx(string, string, Tools.SecurityAttributes, Tools.SecurityAttributes, bool, CreateFlags, string, string, ref StartupInfo, out ProcessInformation, List{string})"/>
+        /// </summary>
+        /// <param name="DllList"></param>
+        public void AddForceLoadDllRange( IEnumerable<string> DllList)
+        {
+            Handler.ForceLoadDll.AddRange(DllList);
+        }
+        #endregion
+
+        #region constructors
         /// <summary>
         /// Make a new instance with the target process and tell how to debug in.
         /// </summary>
@@ -114,7 +280,10 @@ namespace DebugDotNet.Win32.Debugger
             CaptureData = new DebugEventCapture();
             Handler.SingleThreadMode = true;
         }
+        #endregion
 
+
+        #region Start Debugging
         /// <summary>
         /// Begin debugger
         /// </summary>
@@ -123,7 +292,9 @@ namespace DebugDotNet.Win32.Debugger
             Handler.Events = CaptureData;
             Handler.Start(p => { DispatchEvents(); });
         }
+        #endregion
 
+        #region Event Handling
         /// <summary>
         /// Check for any events and pull from the query, dispatch to the event handlers
         /// </summary>
@@ -155,6 +326,14 @@ namespace DebugDotNet.Win32.Debugger
                         ExitThreadEvent?.Invoke(ref ReadyToDispatch, ref Response);
                         break;
                     case DebugEventType.LoadDllDebugEvent:
+                        if (TrackingModules)
+                        {
+                            var NewModule = new EventDebuggerLoadedDll();
+                            var LoadedDll = ReadyToDispatch.LoadDllInfo;
+                            NewModule.BaseLocation = LoadedDll.BaseDllAddress;
+                            NewModule.Name = Win32.Tools.UnmangedToolKit.TrimPathProcessingConst(LoadedDll.ImageName);
+                            LoadedModules.Add(LoadedDll.BaseDllAddress, NewModule);
+                        }
                         LoadDllDebugEvent?.Invoke(ref ReadyToDispatch, ref Response);
                         break;
                     case DebugEventType.OutputDebugStringEvent:
@@ -165,6 +344,14 @@ namespace DebugDotNet.Win32.Debugger
                         break;
                     case DebugEventType.UnloadDllDebugEvent:
                         UnloadDllDebugEvent?.Invoke(ref ReadyToDispatch, ref Response);
+                        if (TrackingModules)
+                        {
+                            var EventData = ReadyToDispatch.UnloadDllInfo;
+                            if (LoadedModules.ContainsKey(EventData.BaseDllAddress))
+                            {
+                                LoadedModules.Remove(EventData.BaseDllAddress);
+                            }
+                        }
                         break;
                 }
 
@@ -173,8 +360,9 @@ namespace DebugDotNet.Win32.Debugger
         }
         #region delegate prototypes
         /// <summary>
-        /// Triggers when any event is received
+        /// Triggers when any event is received.
         /// </summary>
+        /// <remarks> Should you subscribe to this and a specific event, you'll see two instances of that event.</remarks>
         /// <param name="EventData">ref to a DebugEvent that already has the data</param>
         /// <param name="Response">ref to a Reponse to the event that gets send back to Windows</param>
         public delegate void AnyEventCallBack(ref DebugEvent EventData, ref ContinueStatus Response);
@@ -280,6 +468,6 @@ namespace DebugDotNet.Win32.Debugger
         /// Subscribe to get when a debugged process exits
         /// </summary>
         public event ExitProcessEventCallBack ExitProcessEvent;
-
+        #endregion
     }
 }

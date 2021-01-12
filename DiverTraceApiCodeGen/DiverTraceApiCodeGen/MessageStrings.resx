@@ -1,0 +1,169 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="DetourAttachRequired_KeyMissing" xml:space="preserve">
+    <value>"Requred Temmplate key '{0}' appears missing. This needs to be a non null value and in the template list</value>
+  </data>
+  <data name="DetourAttachRequired_NonNullTemplate" xml:space="preserve">
+    <value>Required Template value '{0}' cannot be empty or null</value>
+    <comment>Message that happens when a template is required to be non null and the caller assigns it</comment>
+  </data>
+  <data name="EmitTypeDefBadMsg1" xml:space="preserve">
+    <value>Can't export a C/C++ typedef</value>
+    <comment>Exception happens when __declspec() is included when trying to import a function that's set to use typedef</comment>
+  </data>
+  <data name="EmitTypeDefBadMsg2" xml:space="preserve">
+    <value>Can't import a C/C++ typedef</value>
+  </data>
+  <data name="EmitTypeDefBadMsgInline" xml:space="preserve">
+    <value>Emitting inline prefix unsupported for typedef statement</value>
+  </data>
+  <data name="IndentLessZeroMessage" xml:space="preserve">
+    <value>IndentLevel can't be less than zero</value>
+    <comment>happens when indent is set to something less than zero</comment>
+  </data>
+  <data name="InvalidCallConvSetMsg" xml:space="preserve">
+    <value>This value must be a calling convention only only</value>
+  </data>
+  <data name="NonNullAndNonEmptyStringNeeded" xml:space="preserve">
+    <value>{0} is required to both be non null and non tempty</value>
+  </data>
+  <data name="ValidateArgFailureMsg" xml:space="preserve">
+    <value>ArgType or ArgName validation failure.</value>
+  </data>
+  <data name="ValidateCallerFuncFailMsg" xml:space="preserve">
+    <value>Validation for EmitDeclareFunctionSpecs failed in "{0}."</value>
+  </data>
+  <data name="ValidateFunctionSpecsEnumCDeclForVargs" xml:space="preserve">
+    <value>"{0}: Function with variable number of arguments must be specified as CDECL in the calling convention</value>
+  </data>
+  <data name="ValidateFunctionSpecsEnumDupDllStuff" xml:space="preserve">
+    <value>{0}: Can't specify both DllExport and DllImport</value>
+  </data>
+  <data name="ValidateFunctionSpecsEnumFailMsg" xml:space="preserve">
+    <value>Failed EmitDeclareFunctionSpecs validate</value>
+    <comment>Happens in exception when invalid function specs is passed to a CodeGen Function</comment>
+  </data>
+  <data name="ValidateFunctionSpecsEnumNoInlineDllStuff" xml:space="preserve">
+    <value>{0} can't specifiy DllExport or DllImport with inline</value>
+  </data>
+  <data name="ValidateFunctionSpecsEnumToManyCalling" xml:space="preserve">
+    <value>{0}: Can't specify multiple Calling Conventions</value>
+  </data>
+</root>

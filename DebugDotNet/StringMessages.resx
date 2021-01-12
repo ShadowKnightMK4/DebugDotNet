@@ -133,4 +133,14 @@
   <data name="DebugProcessNoUserNameAllowed" xml:space="preserve">
     <value>DebugProcess class does not support specifying a username</value>
   </data>
+  <data name="DetourMarshalCreateProcessNonNullEnviroment" xml:space="preserve">
+    <value>Specifying a non empty envorment is not currently supported for the detours wrapper for {0}</value>
+  </data>
+  <data name="DetourMarshalCreateProcessWithDll_OutOfMemory" xml:space="preserve">
+    <value>Marshaling the {0} SecurityAttribute to a IntPtr valued</value>
+  </data>
+  <data name="DetourMarshalRemoteMarshalFailure" xml:space="preserve">
+    <value>Bad Marshal for Data type {0}</value>
+    <comment>This message means an error happen while reading memory from a remote process and marshaling it to a  CLR structure</comment>
+  </data>
 </root>

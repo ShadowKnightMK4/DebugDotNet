@@ -5,16 +5,26 @@ Namespace space Usages
 Namespace DebugDotNet
 	Contains the Thin wrapper for the MSDN Debug Api in Win32DebugApi static class. The NativeMethods static class is here too.
 
-NameSpace DebugDotNet.Win32.Enums
-	Project specific enums go here
+NameSpace DebugDotNet.Win32.Resources
+	TODO:	Should contain something to enumerate resources loaded by a process and / or a dll
 
+Namsspace DebugDotNet.NativeHelpers.XXXX
+	TODO: Each namespace here corpsonds to a single dll in the same folder location as debugdotnet
+NameSpace DebugDotNet.Win32.Enums
+	A majority of project specific enums go here. A view class specific ones are defined within their respective class.
+
+Namespace DebugDotnet.Diver
+	This is built using Detours. It's a dll that is injected into a process to debug (must be a new one).
+	The Dll communicates with the debugger by Raising Exceptions via Structured Excetopion Handling.
+	The Namespace in DebugDotNet is code to translate and parse those
 
 Namespace DebugNotNet.Win32.InternalStructs
-	The structs that the c# friendly ones read from are located here. 
+	The structs that the c# friendly ones are made from are defined in this namespace
 	Each one's name scheme is a direct lift from the MSDN equivlenet struct with _INTERNAL at the end.
+	A majority of them are marked internal.
 	
 Namespace DebugDotNet.Win32.Structs
-	The c# friendly structs (one with some processing) are here. Strings are read and converted to c# strings and file handles are swapped
+	The c# friendly structs (one with some processing) are here. Strings are read and converted to c# unicode strings and file handles are swapped
 	to SafeFileHandle. They are named with CamalCasing.
 
 Namespace DebugDotNet.Tools

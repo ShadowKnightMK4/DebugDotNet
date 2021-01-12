@@ -18,7 +18,7 @@ using System.Text;
  * DebugEventInternal.  
  * 
  * 
- * This file contains the implemnation of the internal struct side ofthings
+ * This file contains the implemnation of the internal struct side of things and this not generally ment for general use
  * 
  */
 namespace DebugDotNet.Win32.Internal
@@ -47,6 +47,9 @@ namespace DebugDotNet.Win32.Internal
         public uint dwExitCode;
 
     }
+
+
+
         /// <summary>
         ///The in memory form of <see cref="CreateThreadDebugInfo"/> structure before any processing
         /// </summary>
@@ -65,6 +68,27 @@ namespace DebugDotNet.Win32.Internal
         /// the entry point of the thread in the vitual address space of the process being debugged. This Resolves to <see cref="CreateThreadDebugInfo.StartRoutineAddress"/>
         /// </summary>
         public IntPtr lpStartAddress;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct THREADENTRY32
+    {
+        /// <summary>
+        /// Make in instance of the struct with the size entry already set
+        /// </summary>
+        /// <param name="_">Not used. C# complains about explicite parameterless struct construct(). </param>
+        public THREADENTRY32(int _)
+        {
+            dwSize = (uint) Marshal.SizeOf(typeof(THREADENTRY32));
+            cntUsage = th32ThreadId = th32OwnerProcessID = tpBasePri = tpDeltaPri = dwFlags = 0;
+        }
+        public uint dwSize;
+        public uint cntUsage;
+        public uint th32ThreadId;
+        public uint th32OwnerProcessID;
+        public uint tpBasePri;
+        public uint tpDeltaPri;
+        public uint dwFlags;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -178,6 +202,10 @@ namespace DebugDotNet.Win32.Internal
         /// </summary>
         public IntPtr lpBaseOfDll { get; set; }
 
+        /// <summary>
+        /// return an instance of <see cref="UnloadDllDebugInfo"/> make from this struct
+        /// </summary>
+        /// <returns></returns>
         public UnloadDllDebugInfo GetPublic()
         {
             return new UnloadDllDebugInfo(lpBaseOfDll);
@@ -337,7 +365,7 @@ namespace DebugDotNet.Win32.Internal
             if (hFile != null)
             {
                 result.FileHandle = new SafeFileHandle(hFile, true);
-                result.lpImageName = NativeMethods.GetFinalPathNameByHandle(hFile, FinalFilePathFlags.FILE_NAME_NORMALIZED);
+                result.ImageName = NativeMethods.GetFinalPathNameByHandle(hFile, FinalFilePathFlags.FileNameNormalized);
             }
             else
             {
@@ -346,8 +374,8 @@ namespace DebugDotNet.Win32.Internal
             result.BaseDllAddress = lpBaseOfDll;
 
 
-            result.nDebugInfoSize = nDebugInfoSize;
-            result.dwDebugInfoFileOffset = dwDebugInfoFileOffset;
+            result.DebugInfoSize = nDebugInfoSize;
+            result.DebugInfoFileOffset = dwDebugInfoFileOffset;
 
             return result;
         }

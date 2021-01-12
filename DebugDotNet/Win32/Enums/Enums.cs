@@ -1,9 +1,184 @@
-﻿using System;
+﻿using DebugDotNet.Win32.Structs;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace DebugDotNet.Win32.Enums
 {
+
+    /// <summary>
+    /// Settings to fill out <see cref="StartupInfo.wShowWindow"/> value
+    /// </summary>
+    [Flags]
+#pragma warning disable CA1028 // Enum Storage should be Int32
+    public enum ShowWindowSettings : short
+#pragma warning restore CA1028 // Enum Storage should be Int32
+    {
+        /// <summary>
+        /// Minimizes a window, even if the thread that owns the window is not responding.This flag should only be used when minimizing windows from a different thread. 
+        /// </summary>
+        ForceMinnimize = 11,
+
+
+        /// <summary>
+        /// Hides the window and activates another window.
+        /// </summary>
+        Hide = 0,
+
+        /// <summary>
+        /// //Maximizes the specified window. 
+        /// </summary>
+        Maximize = 3,
+
+        /// <summary>
+        /// Minimizes the specified window and activates the next top-level window in the Z order.
+        /// </summary>
+        Minimize = 6,
+
+        /// <summary>
+        /// Activates and displays the window.If the window is minimized or maximized, the system restores it to its original size and position. An application should specify this flag when restoring a minimized window. 
+        /// </summary>
+        Restore = 9,
+
+        /// <summary>
+        ///Activates the window and displays it in its current size and position.
+        /// </summary>
+        Show = 5,
+
+        /// <summary>
+        /// Sets the show state based on the SW_ value specified in the STARTUPINFO structure passed to the CreateProcess function by the program that started the application.
+        /// </summary>
+        ShowDefault = 10,
+
+        /// <summary>
+        ///  Activates the window and displays it as a maximized window.
+        /// </summary>
+        ShowMaximized = Maximize,
+
+        /// <summary>
+        /// Activates the window and displays it as a minimized window.
+        /// </summary>
+        ShowMinimized = 2,
+
+        /// <summary>
+        /// Displays the window as a minimized window.This value is similar to SW_SHOWMINIMIZED, except the window is not activated. 
+        /// </summary>
+        ShowMinimizedNoActivate = 7,
+
+
+        /// <summary>
+        /// Displays the window in its current size and position.This value is similar to SW_SHOW, except that the window is not activated. 
+        /// </summary>
+        ShowNa = 8,
+
+
+        /// <summary>
+        /// Displays a window in its most recent size and position. This value is similar to SW_SHOWNORMAL, except that the window is not activated. 
+        /// </summary>
+        ShowNoActivate = 4,
+
+
+        /// <summary>
+        /// Normal Window
+        /// </summary>
+        ShowNormal = 1
+    }
+
+
+
+    /// <summary>
+    /// Flags used in the <see cref="StartupInfo.dwFlags"/> member
+    /// </summary>
+    [Flags]
+    public enum StartInfoFlags 
+    {
+        /// <summary>
+        /// Indicates that the cursor is in feedback mode for two seconds after CreateProcess is called. The Working in Background cursor is displayed (see the Pointers tab in the Mouse control panel utility).
+        /// If during those two seconds the process makes the first GUI call, the system gives five more seconds to the process. If during those five seconds the process shows a window, the system gives five more seconds to the process to finish drawing the window.
+        /// The system turns the feedback cursor off after the first call to GetMessage, regardless of whether the process is drawing.
+        /// </summary>
+        StartInfoForceOnFeedBack = 0x00000040,
+
+        /// <summary>
+        /// Indicates that the feedback cursor is forced off while the process is starting. The Normal Select cursor is displayed.
+        /// </summary>
+        StartInfoForceOffFeedBack = 0x00000080,
+
+        /// <summary>
+        /// Indicates that any windows created by the process cannot be pinned on the taskbar.
+        /// This flag must be combined with STARTF_TITLEISAPPID.
+        /// </summary>
+        StartInfoPreventPinning = 0x00002000,
+
+        /// <summary>
+        /// Indicates that the process should be run in full-screen mode, rather than in windowed mode.
+        /// This flag is only valid for console applications running on an x86 computer.
+        /// </summary>
+        StartInfoRunFullscreen = 0x00000020,
+
+        /// <summary>
+        /// The lpTitle member contains an AppUserModelID. This identifier controls how the taskbar and Start menu present the application, and enables it to be associated with the correct shortcuts and Jump Lists. Generally, applications will use the SetCurrentProcessExplicitAppUserModelID and GetCurrentProcessExplicitAppUserModelID functions instead of setting this flag. For more information, see Application User Model IDs.
+        /// If STARTF_PREVENTPINNING is used, application windows cannot be pinned on the taskbar. The use of any AppUserModelID-related window properties by the application overrides this setting for that window only.
+        /// This flag cannot be used with STARTF_TITLEISLINKNAME.
+        /// </summary>
+        StartInfoTitleIsAppId = 0x00001000,
+
+
+
+        /// <summary>
+        /// The lpTitle member contains the path of the shortcut file (.lnk) that the user invoked to start this process. This is typically set by the shell when a .lnk file pointing to the launched application is invoked. Most applications will not need to set this value.
+        /// This flag cannot be used with STARTF_TITLEISAPPID. 
+        /// </summary>
+        StartInfoTitleIsLinkName = 0x00000800,
+
+
+        /// <summary>
+        /// The command line came from an untrusted source. For more information, see MSDN
+        /// </summary>
+        StartInfoUntrustedSource = 0x00008000,
+
+        /// <summary>
+        /// The dwXCountChars and dwYCountChars members contain additional information.
+        /// </summary>
+        StartInfoUseCountChars = 0x00000008,
+
+        /// <summary>
+        /// The dwFillAttribute member contains additional information.
+        /// </summary>
+        StartInfoUseFillAttribute = 0x00000010,
+
+        /// <summary>
+        /// The hStdInput member contains additional information.
+        /// This flag cannot be used with STARTF_USESTDHANDLES.
+        /// </summary>
+        StatInfoUseHotKey = 0x00000200,
+
+        /// <summary>
+        /// The dwX and dwY members contain additional information.
+        /// </summary>
+        StartInfoUsePositon = 0x00000004,
+
+        /// <summary>
+        /// The wShowWindow member contains additional information.
+        /// </summary>
+        StartInfoUseShowWindow = 0x00000001,
+
+        /// <summary>
+        /// The dwXSize and dwYSize members contain additional information.
+        /// </summary>
+        StartInfoUseSize = 0x00000002,
+        /// <summary>
+        /// The hStdInput, hStdOutput, and hStdError members contain additional information.
+        /// If this flag is specified when calling one of the process creation functions, the handles must be inheritable and the function's bInheritHandles parameter must be set to TRUE. For more information, see Handle Inheritance.
+        /// If this flag is specified when calling the GetStartupInfo function, these members are either the handle value specified during process creation or INVALID_HANDLE_VALUE.
+        /// Handles must be closed with CloseHandle when they are no longer needed.
+        /// This flag cannot be used with STARTF_USEHOTKEY.
+        /// </summary>
+        StartInfoUseStdHandles = 0x00000100
+    }
+
+
+
     /// <summary>
     /// Specifies how DebugWorkerThread class is begin debugging the target process.
     /// </summary>
@@ -22,6 +197,30 @@ namespace DebugDotNet.Win32.Enums
         /// </summary>
         CreateWithDebug = 3
     };
+
+    /// <summary>
+    /// Process Creation Flags used by Detours and Debug Process
+    /// </summary>
+    [Flags]
+    public enum CreateFlags : int
+    {
+        /// <summary>
+        /// Launch with no Debug flag
+        /// </summary>
+        DoNotDebug = 0x00000000,
+        /// <summary>
+        /// Launch with debugging this process plus any processors it spawns
+        /// </summary>
+        DebugProcessAndChild = 0x00000001,
+        /// <summary>
+        /// Debug *just* this process
+        /// </summary>
+        DebugOnlyThisProcess = 0x00000002,
+        /// <summary>
+        /// If the target is a console app, this forces a new console rather than using the one (you) have
+        /// </summary>
+        ForceNewConsole = 0x00000010
+    }
 
     /// <summary>
     /// from MSDN Exception Debug Events, this is the type of exception that happened
@@ -257,14 +456,32 @@ namespace DebugDotNet.Win32.Enums
     ///  Flags related to GetFinalFileNameByHandle()
     /// </summary>
     [Flags]
-    internal enum FinalFilePathFlags
+    public enum FinalFilePathFlags
     {
-        FILE_NAME_NORMALIZED = 0x0,
-        VOLUME_NAME_DOS = FILE_NAME_NORMALIZED,
-        FILE_NAME_OPENED = 0x8,
-        VOLUME_NAME_GUID = 0x1,
-        VOLUME_NAME_NONE = 0x4,
-        VOLUME_NAME_NT = 0x2
+        /// <summary>
+        /// Returns the normalized finalname. Also is the default.
+        /// </summary>
+        FileNameNormalized = 0x0,
+        /// <summary>
+        /// Return the path with the drive letter. This is the default.
+        /// </summary>
+        VolumeNameDos = FileNameNormalized,
+        /// <summary>
+        /// Returns the opened (not normalized) filename
+        /// </summary>
+        FileNameOpened = 0x8,
+        /// <summary>
+        /// Returned string contains the path with a volume GUID path instead of the drive name
+        /// </summary>
+        VolumeNameGuid = 0x1,
+        /// <summary>
+        /// returns string contains no volume information
+        /// </summary>
+        VolumeNameNone = 0x4,
+        /// <summary>
+        /// returns the string containing the volume's device path.
+        /// </summary>
+        VolumeNameNt = 0x2
     }
 
 }

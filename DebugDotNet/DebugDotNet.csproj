@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <UserSecretsId>a89572b5-8377-40a7-bd37-c7950fbb1bf1</UserSecretsId>
+    <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -9,6 +11,25 @@
     <DocumentationFile>C:\Users\Thoma\source\repos\DebugTestApp\DebugEventHandler\DebugEventHandlerApi.xml</DocumentationFile>
     <NoWarn>1701;1702; 1051</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Debug\**" />
+    <Compile Remove="NativeHelperSource\**" />
+    <Compile Remove="NativeHelpers\Detours-4.0.1\**" />
+    <Compile Remove="Release\**" />
+    <EmbeddedResource Remove="Debug\**" />
+    <EmbeddedResource Remove="NativeHelperSource\**" />
+    <EmbeddedResource Remove="NativeHelpers\Detours-4.0.1\**" />
+    <EmbeddedResource Remove="Release\**" />
+    <None Remove="Debug\**" />
+    <None Remove="NativeHelperSource\**" />
+    <None Remove="NativeHelpers\Detours-4.0.1\**" />
+    <None Remove="Release\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Win32\Diver\OldDiverTool.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Remove="DebugEventHandlerApi.xml" />
@@ -20,10 +41,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Win32\Process\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,6 +56,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>StringMessages.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Win32\Diver\" />
   </ItemGroup>
 
 </Project>

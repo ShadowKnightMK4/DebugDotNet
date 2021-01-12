@@ -1,0 +1,32 @@
+﻿
+
+After source is compiled you'll get
+
+detours.dll, a version of detours that exports the routines that DebugDotNet import / wrap
+DebugDotNet.dll, this is the C# core of the DebugDotNet namespac
+DebugDotNetDiver.dll is the Dll built on Detours to allow modifcation of certain Native Function Calls at runtime when
+        paired witha debugger that understands the Diver Protocol.
+
+
+DebugDotNet.dll does wrap some of the symbol stuff in Dbghlp.dll and aims to also include probing the dll for
+the version that is contained so the unsupported stuff is not allowed to be called
+
+
+
+With the Excepption of the Diver DLL, everything should be safely compilable with a visual studio 2019 C# and C++ compiler directly
+
+
+Diver is also compilable *BUT* is setup a bit different.
+
+
+TODO for final idea:
+The source file diver.xml will contain the settings to generate exactly what will be detoured in the final Dll.
+
+The Toolset of DiverApiCodeGen.exe and DiverTraceApiCodeGenLibrary.dll read this xml file and output the C++ file named
+output.cpp contained within the DebugDotNetDiver project location.
+
+
+CURRENTLY:
+The xml is ignored. The tools generate output based on hardcoded settings in the file.
+Once output.cpp is genereated, the diver project can safely be compiled normally in Visual Studio.
+

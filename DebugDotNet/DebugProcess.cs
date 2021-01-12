@@ -1,55 +1,25 @@
-﻿using System;
+﻿using DebugDotNet.NativeHelpers.Detours;
+using DebugDotNet.Win32.Enums;
+using DebugDotNet.Win32.Internal;
+using DebugDotNet.Win32.Structs;
+using System;
 using System.Collections.Generic;
-using System.Text;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security;
-using System.Runtime.ConstrainedExecution;
-using System.ComponentModel;
-using System.Globalization;
-using System.Threading;
-using DebugDotNet.Win32.Internal;
+using System.Runtime.Serialization.Json;
 
 namespace DebugDotNet.Win32.Tools
 {
-    // This also works with CharSet.Ansi as long as the calling function uses the same character set.
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    struct STARTUPINFO
-    {
-        public Int32 cb;
-        public string lpReserved;
-        public string lpDesktop;
-        public string lpTitle;
-        public Int32 dwX;
-        public Int32 dwY;
-        public Int32 dwXSize;
-        public Int32 dwYSize;
-        public Int32 dwXCountChars;
-        public Int32 dwYCountChars;
-        public Int32 dwFillAttribute;
-        public Int32 dwFlags;
-        public Int16 wShowWindow;
-        public Int16 cbReserved2;
-        public IntPtr lpReserved2;
-        public IntPtr hStdInput;
-        public IntPtr hStdOutput;
-        public IntPtr hStdError;
-    }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct PROCESS_INFORMATION
-    {
-        public IntPtr hProcess;
-        public IntPtr hThread;
-        public int dwProcessId;
-        public int dwThreadId;
-    }
+
+
 
     /// <summary>
     /// c# of SecurityAttributes
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    internal struct SecurityAttributes
+    public struct SecurityAttributes : IEquatable<SecurityAttributes>
     {
         /// <summary>
         /// length of the struct in bytes
@@ -64,6 +34,85 @@ namespace DebugDotNet.Win32.Tools
         /// is this inherited
         /// </summary>
         public int bInheritHandle;
+
+
+        /// <summary>
+        /// Compare any two <see cref="SecurityAttributes"/>
+        /// </summary>
+        /// <param name="obj">compare against</param>
+        /// <returns>true if equal and false if not.</returns>
+        public bool Equals(SecurityAttributes obj)
+        {
+            if (obj == null)
+            {
+                return false;
+            }
+            else
+            {
+                if (obj.bInheritHandle != bInheritHandle)
+                {
+                    return false;
+                }
+                if (obj.lpSecurityDescriptor != lpSecurityDescriptor)
+                {
+                    return false;
+                }
+
+                if (obj.nLength != nLength)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+            {
+                return false;
+            }
+            else
+            {
+                if (obj is SecurityAttributes)
+                {
+                    return Equals((SecurityAttributes)obj);
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// return hashcode of each memeber
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            return this.bInheritHandle.GetHashCode() + this.lpSecurityDescriptor.GetHashCode() + this.nLength.GetHashCode();
+        }
+
+        /// <summary>
+        /// Compare if any two <see cref="SecurityAttributes"/> structs are equal
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns>returns true if equal and false if not</returns>
+        public static bool operator ==(SecurityAttributes left, SecurityAttributes right)
+        {
+            return left.Equals(right);
+        }
+
+        /// <summary>
+        /// Compare if any two <see cref="SecurityAttributes"/> structs are NOT equal
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns>returns true if different and false if not</returns>
+        public static bool operator !=(SecurityAttributes left, SecurityAttributes right)
+        {
+            return !(left == right);
+        }
+
+
     }
     /// <summary>
     /// Intended to launch a new process with the debug flag set. Most of the information exposed
@@ -72,28 +121,26 @@ namespace DebugDotNet.Win32.Tools
     public class DebugProcess : Process
     {
         /// <summary>
+        /// Force the process being launched to use this dlls also via detours. Not supported if current setting is not <see cref="DebuggerCreationSetting.CreateWithDebug"/>
+        /// </summary>
+        public List<string> ForceLoadDlls
+        { 
+            get
+            {
+                if (intForceLoadDlls == null)
+                {
+                    intForceLoadDlls = new List<string>();
+                }
+                return intForceLoadDlls;
+            }
+        }
+
+
+        private List<string> intForceLoadDlls;
+        /// <summary>
         /// Flags to describe how this process will be debugged
         /// </summary>
-        [Flags]
-        public enum CreateFlags : int
-        {
-            /// <summary>
-            /// Launch with no Debug flag
-            /// </summary>
-            DoNotDebug = 0x00000000,
-            /// <summary>
-            /// Launch with debugging this process plus any processors it spawns
-            /// </summary>
-            DebugProcessAndChild = 0x00000001,
-            /// <summary>
-            /// Debug *just* this process
-            /// </summary>
-            DebugOnlyThisProcess = 0x00000002,
-            /// <summary>
-            /// If the target is a console app, this forces a new console rather than using the one (you) have
-            /// </summary>
-            ForceNewConsole = 0x00000010
-        }
+ 
 
         [Flags]
         private enum StartupInfo_settings : uint
@@ -101,91 +148,19 @@ namespace DebugDotNet.Win32.Tools
             STARTF_USESHOWWINDOW = 0x00000001
         }
 
-        [Flags]
-        private enum ShowWindow_settings : uint
-        {
-            /// <summary>
-            /// Minimizes a window, even if the thread that owns the window is not responding.This flag should only be used when minimizing windows from a different thread. 
-            /// </summary>
-            SW_FORCEMINIMIZE = 11,
-
-
-            /// <summary>
-            /// //Hides the window and activates another window.
-            /// </summary>
-            SW_HIDE = 0,
-
-            /// <summary>
-            /// //Maximizes the specified window. 
-            /// </summary>
-            SW_MAXIMIZE = 3,
-
-            /// <summary>
-            /// Minimizes the specified window and activates the next top-level window in the Z order.
-            /// </summary>
-            SW_MINIMIZE = 6,
-
-            /// <summary>
-            /// Activates and displays the window.If the window is minimized or maximized, the system restores it to its original size and position. An application should specify this flag when restoring a minimized window. 
-            /// </summary>
-            SW_RESTORE = 9,
-
-            /// <summary>
-            ///Activates the window and displays it in its current size and position.
-            /// </summary>
-            SW_SHOW = 5,
-
-            /// <summary>
-            /// Sets the show state based on the SW_ value specified in the STARTUPINFO structure passed to the CreateProcess function by the program that started the application.
-            /// </summary>
-            SW_SHOWDEFAULT = 10,
-
-            /// <summary>
-            ///  Activates the window and displays it as a maximized window.
-            /// </summary>
-            SW_SHOWMAXIMIZED =  SW_MAXIMIZE,
-
-            /// <summary>
-            /// Activates the window and displays it as a minimized window.
-            /// </summary>
-            SW_SHOWMINIMIZED = 2,
-
-            /// <summary>
-            /// Displays the window as a minimized window.This value is similar to SW_SHOWMINIMIZED, except the window is not activated. 
-            /// </summary>
-            SW_SHOWMINNOACTIVE = 7,
-
-
-            /// <summary>
-            /// Displays the window in its current size and position.This value is similar to SW_SHOW, except that the window is not activated. 
-            /// </summary>
-            SW_SHOWNA = 8,
-
-
-            /// <summary>
-            /// Displays a window in its most recent size and position. This value is similar to SW_SHOWNORMAL, except that the window is not activated. 
-            /// </summary>
-            SW_SHOWNOACTIVATE = 4,
-
-
-            /// <summary>
-            /// Normal Window
-            /// </summary>
-            SW_SHOWNORMAL = 1
-        }
-
+ 
 
 
         /// <summary>
         /// PROCESS_INFORMATION struct for CreateProcessor
         /// </summary>
-        private PROCESS_INFORMATION pInfo;
+        private ProcessInformation pInfo;
 
 
         /// <summary>
         /// Get the id of the process after it's been made
         /// </summary>
-        public new int Id => pInfo.dwProcessId;
+        public new int Id => pInfo.ProcessId;
 
         /// <summary>
         /// Specify how to debug this process
@@ -199,14 +174,14 @@ namespace DebugDotNet.Win32.Tools
 
 
         /// <summary>
-        /// Safly get rid of handles stored in pInfo
+        /// Safely get rid of handles stored in pInfo
         /// </summary>
         /// <param name="Man"></param>
         protected void Diposing(bool Man)
         {
             
-           NativeMethods.CloseHandle(pInfo.hProcess);
-            NativeMethods.CloseHandle(pInfo.hThread);
+           NativeMethods.CloseHandle(pInfo.ProcessHandleRaw);
+            NativeMethods.CloseHandle(pInfo.ThreadHandleRaw);
 
             base.Dispose(Man);
         }
@@ -215,21 +190,21 @@ namespace DebugDotNet.Win32.Tools
         /// setup default startinfo
         /// </summary>
         /// <param name="start"></param>
-        private void FetchStartupInfo(out STARTUPINFO start)
+        private void FetchStartupInfo(out StartupInfo start)
         {
-            start = new STARTUPINFO();
+            start = new StartupInfo();
             start.cb = Marshal.SizeOf(start);
 
 
             if (this.StartInfo.CreateNoWindow == true)
             {
-                start.dwFlags = (start.dwFlags) | (int)StartupInfo_settings.STARTF_USESHOWWINDOW;
-                start.wShowWindow = (short)ShowWindow_settings.SW_HIDE;
+                start.dwFlags = (start.dwFlags) | StartInfoFlags.StartInfoUseShowWindow;
+                start.wShowWindow = ShowWindowSettings.Hide;
             }
             else
             {
-                start.dwFlags = (start.dwFlags) | (int)StartupInfo_settings.STARTF_USESHOWWINDOW;
-                start.wShowWindow = (short)ShowWindow_settings.SW_SHOWNORMAL;
+                start.dwFlags = (start.dwFlags) | StartInfoFlags.StartInfoUseShowWindow; 
+                start.wShowWindow = ShowWindowSettings.ShowNormal;
             }
 
             if ((string.IsNullOrEmpty(StartInfo.UserName) == false))
@@ -250,11 +225,11 @@ namespace DebugDotNet.Win32.Tools
         {
             IntPtr err = IntPtr.Zero;
             int e;
-            if (NativeMethods.GetExitCodeProcess(pInfo.hProcess, ref err) == true)
+            if (NativeMethods.GetExitCodeProcess(pInfo.ProcessHandleRaw, ref err) == true)
             {
                 e = err.ToInt32();
                 if (e == StillActive)  // STILL_ACTIVE
-                    return GetProcessById(pInfo.dwProcessId);
+                    return GetProcessById(pInfo.ProcessId);
 #pragma warning disable CA1303 // Do not pass literals as localized parameters
                 throw new InvalidOperationException("Process already quit");
 #pragma warning restore CA1303 // Do not pass literals as localized parameters
@@ -291,15 +266,17 @@ namespace DebugDotNet.Win32.Tools
 
             string arguments;
             string currentdir;
+            IntPtr Env = IntPtr.Zero;
             try
             {
+                
                 if (StartInfo.UseShellExecute == true)
                 {
                     base.Start();
                 }
                 else
                 {
-                    FetchStartupInfo(out STARTUPINFO lpStartupInfo);
+                    FetchStartupInfo(out StartupInfo lpStartupInfo);
                     if (string.IsNullOrEmpty(StartInfo.Arguments) == false)
                     {
                         arguments = StartInfo.Arguments;
@@ -318,27 +295,50 @@ namespace DebugDotNet.Win32.Tools
                         currentdir = null;
                     }
 
-                    if (NativeMethods.CreateProcessW(StartInfo.FileName, arguments, IntPtr.Zero, IntPtr.Zero, true, (uint)DebugSetting, IntPtr.Zero, currentdir, ref lpStartupInfo, out pInfo))
+                    if (intForceLoadDlls.Count == 0)
                     {
-                    
+                        Env = Marshal.StringToHGlobalUni(UnmangedToolKit.EnviromentToStringReady(this.StartInfo));
+                        if (NativeMethods.CreateProcessW(StartInfo.FileName, arguments, IntPtr.Zero, IntPtr.Zero, true, (uint)DebugSetting, Env, currentdir, ref lpStartupInfo, out pInfo))
+                        {
+
+                        }
+                        else
+                        {
+                            throw new Win32Exception(Marshal.GetLastWin32Error());
+                        }
                     }
                     else
                     {
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                        if (DetoursWrappers.DetourCreateProcessWithDllEx(StartInfo.FileName, arguments, new SecurityAttributes(), new SecurityAttributes(), true, DebugSetting, string.Empty, currentdir, ref lpStartupInfo, out pInfo, ForceLoadDlls))
+                        {
+
+                        }
+                        else
+                        {
+                            int err = Marshal.GetLastWin32Error();
+                            if (err != 0)
+                            {
+                                throw new Win32Exception(err);
+                            }
+                        }
+
                     }
+
+
 
 
                 }
             }
             finally
             {
-                if (pInfo.hProcess != ((IntPtr)(-1)))
+                Marshal.FreeHGlobal(Env);
+                if (pInfo.ProcessHandleRaw != ((IntPtr)(-1)))
                 {
-                    NativeMethods.CloseHandle(pInfo.hProcess);
+                    NativeMethods.CloseHandle(pInfo.ProcessHandleRaw);
                 }
-                if (pInfo.hThread != ((IntPtr)(-1)))
+                if (pInfo.ThreadHandleRaw != ((IntPtr)(-1)))
                 {
-                    NativeMethods.CloseHandle(pInfo.hThread);
+                    NativeMethods.CloseHandle(pInfo.ThreadHandleRaw);
                 }
             }
         }
@@ -349,8 +349,8 @@ namespace DebugDotNet.Win32.Tools
         /// <returns></returns>
         public unsafe Process Debug(string app)
         {
-            PROCESS_INFORMATION pInfo = new PROCESS_INFORMATION();
-            STARTUPINFO lpStartupInfo = new STARTUPINFO();
+            ProcessInformation pInfo = new ProcessInformation();
+            StartupInfo lpStartupInfo = new StartupInfo();
             SecurityAttributes Default = new SecurityAttributes();
             Process Ret;
             string args;
@@ -369,7 +369,7 @@ namespace DebugDotNet.Win32.Tools
             IntPtr noargs = Marshal.AllocHGlobal(sizeof(char));
             UnmangedToolKit.Memset((byte*)noargs.ToPointer(), 0, sizeof(char));
             
-            args = this.StartInfo.Arguments;
+            args = StartInfo.Arguments;
             if (string.IsNullOrEmpty(args))
             {
                 args = null;
@@ -378,20 +378,20 @@ namespace DebugDotNet.Win32.Tools
             {
                 if (NativeMethods.CreateProcessW(app, null, IntPtr.Zero, IntPtr.Zero, true, (uint)DebugSetting, IntPtr.Zero,  null, ref lpStartupInfo, out pInfo))
                 {
-                    Ret = Process.GetProcessById(pInfo.dwProcessId);
+                    Ret = Process.GetProcessById(pInfo.ProcessId);
                     return Ret;
                 }
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
             finally
             {
-                if (pInfo.hProcess != ((IntPtr)(-1)))
+                if (pInfo.ProcessHandleRaw != ((IntPtr)(-1)))
                 {
-                    NativeMethods.CloseHandle(pInfo.hProcess);
+                    NativeMethods.CloseHandle(pInfo.ProcessHandleRaw);
                 }
-                if (pInfo.hThread != ((IntPtr)(-1)))
+                if (pInfo.ThreadHandleRaw != ((IntPtr)(-1)))
                 {
-                    NativeMethods.CloseHandle(pInfo.hThread);
+                    NativeMethods.CloseHandle(pInfo.ThreadHandleRaw);
                 }
                 Marshal.FreeHGlobal(noargs);
             }
