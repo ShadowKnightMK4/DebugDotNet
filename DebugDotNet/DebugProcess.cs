@@ -1,6 +1,6 @@
-﻿using DebugDotNet.NativeHelpers.Detours;
+﻿using DebugDotNet.Win32.Internal;
 using DebugDotNet.Win32.Enums;
-using DebugDotNet.Win32.Internal;
+using static DebugDotNet.NativeHelpers.Detours.DetoursWrappers;
 using DebugDotNet.Win32.Structs;
 using System;
 using System.Collections.Generic;
@@ -122,6 +122,7 @@ namespace DebugDotNet.Win32.Tools
     {
         /// <summary>
         /// Force the process being launched to use this dlls also via detours. Not supported if current setting is not <see cref="DebuggerCreationSetting.CreateWithDebug"/>
+        /// Requires the DLL to be setup for this as detailed at <see href="https://github.com/microsoft/Detours/wiki/OverviewHelpers"/>
         /// </summary>
         public List<string> ForceLoadDlls
         { 
@@ -174,9 +175,9 @@ namespace DebugDotNet.Win32.Tools
 
 
         /// <summary>
-        /// Safely get rid of handles stored in pInfo
+        /// Safely get rid of handles stored in pInfo if we go out of scope.
         /// </summary>
-        /// <param name="Man"></param>
+        /// <param name="Man">true if managed needs to be disposed also.</param>
         protected void Diposing(bool Man)
         {
             
@@ -189,7 +190,7 @@ namespace DebugDotNet.Win32.Tools
         /// <summary>
         /// setup default startinfo
         /// </summary>
-        /// <param name="start"></param>
+        /// <param name="start">The variable to dump the settings too</param>
         private void FetchStartupInfo(out StartupInfo start)
         {
             start = new StartupInfo();
@@ -220,7 +221,9 @@ namespace DebugDotNet.Win32.Tools
         /// <summary>
         /// Get the c# process class for this process
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Returns a Usable <see cref="Process"/> class for you if the process has not already quit.</returns>
+        /// <exception cref="InvalidOperationException"> Is thrown if the process already exited</exception>
+        /// <exception cref="Win32Exception"> Is thrown if there's an error in checking if the process already quit.</exception>
         public Process GetProcess()
         {
             IntPtr err = IntPtr.Zero;
@@ -309,7 +312,7 @@ namespace DebugDotNet.Win32.Tools
                     }
                     else
                     {
-                        if (DetoursWrappers.DetourCreateProcessWithDllEx(StartInfo.FileName, arguments, new SecurityAttributes(), new SecurityAttributes(), true, DebugSetting, string.Empty, currentdir, ref lpStartupInfo, out pInfo, ForceLoadDlls))
+                        if ( DetourCreateProcessWithDllEx(StartInfo.FileName, arguments, new SecurityAttributes(), new SecurityAttributes(), true, DebugSetting, string.Empty, currentdir, ref lpStartupInfo, out pInfo, ForceLoadDlls))
                         {
 
                         }

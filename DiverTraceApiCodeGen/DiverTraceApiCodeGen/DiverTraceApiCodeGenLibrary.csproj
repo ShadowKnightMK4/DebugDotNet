@@ -60,6 +60,7 @@
     <Compile Include="NewVersion\CodeGenExt.cs" />
     <Compile Include="NewVersion\NeoDllMainFunction.cs" />
     <Compile Include="NewVersion\NeoFunctionPiece.cs" />
+    <Compile Include="NewVersion\NeoImageSection.cs" />
     <Compile Include="NewVersion\NeoLoadLibrary.cs" />
     <Compile Include="NewVersion\NeoNativeFunction.cs" />
     <Compile Include="NewVersion\NeoNtSetThreadInformation.cs" />

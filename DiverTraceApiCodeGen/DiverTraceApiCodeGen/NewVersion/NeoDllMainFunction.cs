@@ -108,10 +108,17 @@ namespace DiverTraceApiCodeGen.NewVersion
         [Flags]
         public enum DetourSettings
         { 
-            // Default Mode
+            /// <summary>
+            /// Default mode is <see cref="DetourSettings.StaticLink"/>
+            /// </summary>
             Default = 0,
-            // message is sent to debugger showing the routine name that was not detoured
+            /// <summary>
+            /// Message is sent to debugger indicating if the Routine was not sucessfully Detoured
+            /// </summary>
             ReportDetourErrors = 1,
+            /// <summary>
+            /// Message is sent to debugger indicated if the router sucessfully Detoured
+            /// </summary>
             // message sent to debugger showing the routine name that was detoured
             ReportDetourSuccess = 2,
 
@@ -133,11 +140,16 @@ namespace DiverTraceApiCodeGen.NewVersion
             WantThreadLevel = 32,
 
             /// <summary>
-            /// Not currently used
+            /// This generates code that grabs a pointer to the original routine in the source. An Import of the routine and DLL is frame
+            /// makes its way into the Final Compiled Diver Dll.
             /// </summary>
             StaticLink = 64,
             /// <summary>
-            /// Not currently used
+            /// Not currently implemented: This is to indicate the DLL will Call LoadLibrary() and GetProcAddress() to get a pointer to the routine
+            /// that will be detoured.
+            /// <remarks>
+            ///     This throws an <see cref="NotImplementedException"/>
+            /// </remarks>
             /// </summary>
             DynamicLink = 128,
 
@@ -161,6 +173,9 @@ namespace DiverTraceApiCodeGen.NewVersion
             /// </summary>
             ReportPinOK = 2048,
 
+            /// <summary>
+            /// Do or die. All Detoured routines must be suceffully detoured our the DLL returns LoadFailure
+            /// </summary>
             PerfectDetour = 4096,
         }
 

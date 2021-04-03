@@ -15,15 +15,12 @@
   <ItemGroup>
     <Compile Remove="Debug\**" />
     <Compile Remove="NativeHelperSource\**" />
-    <Compile Remove="NativeHelpers\Detours-4.0.1\**" />
     <Compile Remove="Release\**" />
     <EmbeddedResource Remove="Debug\**" />
     <EmbeddedResource Remove="NativeHelperSource\**" />
-    <EmbeddedResource Remove="NativeHelpers\Detours-4.0.1\**" />
     <EmbeddedResource Remove="Release\**" />
     <None Remove="Debug\**" />
     <None Remove="NativeHelperSource\**" />
-    <None Remove="NativeHelpers\Detours-4.0.1\**" />
     <None Remove="Release\**" />
   </ItemGroup>
 

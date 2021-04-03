@@ -210,8 +210,8 @@ namespace DebugDotNet.Win32.Tools
         /// <summary>
         /// Helper routine to translate a <see cref="ushort"/> variable to a true or false
         /// </summary>
-        /// <param name="s"></param>
-        /// <returns></returns>
+        /// <param name="s">the value to check</param>
+        /// <returns>true if s is not equal to zero. Returns false if s is equal to zero.</returns>
         public static bool UShortToBool(ushort s)
         {
             if (s != 0)
@@ -386,11 +386,18 @@ namespace DebugDotNet.Win32.Tools
         /// Write a collection of Bytes to the Remote Process
         /// </summary>
         /// <param name="ProcessTarget">Raw Win32 Handle of the process</param>
-        /// <param name="ProcessAddressLocation"></param>
-        /// <param name="WriteThese"></param>
-        /// <param name="BytesWritten"></param>
+        /// <param name="ProcessAddressLocation">Virtual Memoery Address in the ProcessTarget to write too</param>
+        /// <param name="WriteThese">buffer of bytes to write</param>
+        /// <param name="BytesWritten">contains number of bytes written</param>
+        /// <exception cref="ArgumentException"> Is thrown if ProcessTarget equals <see cref="Win32DebugApi.InvalidHandleValue"/></exception>
+        /// <exception cref="ArgumentNullException">Is thrown if you pass Null in ProcesAddressLocation or WriteThese</exception> 
+        /// <exception cref="Win32Exception">Is thrown if the underlying call to the Native routine WriteProcessMemory that's wrapped <see cref="WriteProcessMemory(IntPtr, IntPtr, byte[], out IntPtr, bool)"/> </exception>
         public unsafe static void WriteProcessMemory(IntPtr ProcessTarget, IntPtr ProcessAddressLocation, byte[] WriteThese, out IntPtr BytesWritten)
         {
+            if  ( (WriteThese == null) || (ProcessAddressLocation == IntPtr.Zero) || (ProcessAddressLocation == null))
+            {
+                throw new ArgumentNullException(nameof(WriteThese));
+            }
             WriteProcessMemory(ProcessTarget, ProcessAddressLocation, WriteThese, out BytesWritten, true);
         }
 
@@ -400,13 +407,28 @@ namespace DebugDotNet.Win32.Tools
         /// <param name="ProcessTarget">Handle to the process to write too</param>
         /// <param name="ProcessAddressLocation">pointer in the address space of the process to write too</param>
         /// <param name="Value">value to write</param>
+        /// <remarks>
+        ///     Remember, this is writing to pontially a different process that your currently executing process. Be carefull to not use a pointer whose context is your process in writing to the remote one. You may accidently (or not) crash it.
+        /// </remarks>
         public unsafe static void WriteDWORD(IntPtr ProcessTarget, IntPtr ProcessAddressLocation, uint Value )
         {
+            
             IntPtr _;
             byte[] Buff;
             Buff = BitConverter.GetBytes(Value);
             WriteProcessMemory(ProcessTarget, ProcessAddressLocation, Buff, out _);
         }
+        /// <summary>
+        /// Prive C# Wrapper for the Windows API of WriteProcessMemory.
+        /// </summary>
+        /// <param name="ProcessHandle">Win32 API Handle of the rpcoess to write too</param>
+        /// <param name="ProcessAddressLocation">Virtual Memory address in ProcessHandle's menoery space to write to. </param>
+        /// <param name="WhatToWrite">buffer of bytes to deposit there.</param>
+        /// <param name="BytesWritten">will contain how many bytes written</param>
+        /// <param name="ErrorThrow">Do you wish for an exception to be generated on Failure?</param>
+        /// <exception cref="ArgumentException"> Is generated if ProcessHandle equals <see cref="Win32DebugApi.InvalidHandleValue"/> if ErrorThrow is set</exception>
+        /// <exception cref="Win32Exception"> Is thrown if the called failed and ErrorThrow is set. Will contain message on error triggerd thanks to <see cref="Marshal.GetLastWin32Error"/> and <see cref="Win32Exception"/> contructor</exception>
+        /// <returns>returns true if call worked, and false if it did not</returns>
         private unsafe static bool WriteProcessMemory(IntPtr ProcessHandle, IntPtr ProcessAddressLocation, byte[] WhatToWrite, out IntPtr BytesWritten, bool ErrorThrow)
         {
             bool Result;
@@ -530,20 +552,20 @@ namespace DebugDotNet.Win32.Tools
         /// <summary>
         /// Zero a range of memory
         /// </summary>
-        /// <param name="Target">memory location</param>
-        /// <param name="NumberOfBytes">number of bytes</param>
+        /// <param name="Target">Memory location in the calling process to Zero.</param>
+        /// <param name="NumberOfBytes">number of bytes to set to zero.</param>
         public static unsafe void ZeroMemory(void *Target, int NumberOfBytes)
         {
             Memset((byte*)Target, 0, (uint)NumberOfBytes);
         }
         /// <summary>
-        /// zero a reange of values
+        /// zero a range of values
         /// </summary>
-        /// <param name="target"></param>
-        /// <param name="len"></param>
-        public static unsafe void ZeroMemory(IntPtr target, uint len)
+        /// <param name="Target">Memory location in the calling process to Zero.</param>
+        /// <param name="len">number of bytes to set to zero.</param>
+        public static unsafe void ZeroMemory(IntPtr Target, uint len)
         {
-            Memset((byte*)target.ToPointer(), 0, (uint)len);
+            Memset((byte*)Target.ToPointer(), 0, (uint)len);
         }
         /// <summary>
         /// Set an Umanaged Memory Block of size len to a specific range of values

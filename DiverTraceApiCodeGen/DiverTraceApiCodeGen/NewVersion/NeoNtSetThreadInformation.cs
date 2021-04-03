@@ -62,6 +62,19 @@ namespace DiverTraceApiCodeGen.NewVersion
 
 
         /// <summary>
+        /// NtSetThreadInformation has a fixed setting of arguments. You may get a copy.
+        /// </summary>
+        public override List<NeoNativeFunctionArg> Arguments
+        {
+            get
+            {
+                List<NeoNativeFunctionArg> ret = new List<NeoNativeFunctionArg>();
+                ret.AddRange(base.Arguments);
+                return ret;
+
+            }
+        }
+        /// <summary>
         /// Generate the attach fuction and the detoured function.
         /// </summary>
         /// <returns></returns>
